@@ -65,7 +65,7 @@
                 <form id="login-form" class="space-y-4" onsubmit="handleLogin(event)">
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">อีเมล (Email)</label>
-                        <input type="email" id="login-email" required placeholder="yourname@gmail.com" value="admin@ba.com" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition">
+                        <input type="email" id="login-email" required placeholder="p.roobchird@gmail.com" value="p.roobchird@gmail.com" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">รหัสผ่าน (Password)</label>
@@ -75,24 +75,8 @@
                         <i data-lucide="shield-check" class="w-4 h-4 text-amber-400"></i>
                         <span>เข้าสู่ระบบ</span>
                     </button>
-                    
-                    <!-- QUICK DEMO LOGIN BUTTONS -->
-                    <div class="pt-2 border-t border-slate-100 flex flex-col space-y-2">
-                        <p class="text-[11px] text-slate-400 text-center font-medium">สลับบัญชีเพื่อทดสอบระบบง่ายๆ (Quick Demo Login)</p>
-                        <div class="grid grid-cols-3 gap-2">
-                            <button type="button" onclick="fillQuickLogin('admin@ba.com', 'password123')" class="py-1.5 px-2 bg-amber-50 text-amber-700 rounded-lg text-xs font-semibold hover:bg-amber-100 border border-amber-200/60 transition">
-                                👑 Admin
-                            </button>
-                            <button type="button" onclick="fillQuickLogin('staff@ba.com', 'password123')" class="py-1.5 px-2 bg-sky-50 text-sky-700 rounded-lg text-xs font-semibold hover:bg-sky-100 border border-sky-200/60 transition">
-                                📋 Staff
-                            </button>
-                            <button type="button" onclick="fillQuickLogin('visitor@ba.com', 'password123')" class="py-1.5 px-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-200 border border-slate-200 transition">
-                                👁️ Visitor
-                            </button>
-                        </div>
-                    </div>
 
-                    <div class="pt-2 text-center">
+                    <div class="pt-4 border-t border-slate-100 text-center">
                         <button type="button" onclick="toggleAuthMode('signup')" class="text-xs text-amber-600 font-medium hover:underline">
                             ยังไม่มีบัญชี? สมัครสมาชิกก่อนใช้งานครั้งแรก (Sign in)
                         </button>
@@ -160,7 +144,7 @@
                 <!-- USER INFO CARD -->
                 <div class="px-4 py-3 mx-3 my-3 bg-slate-800/60 rounded-xl flex items-center justify-between border border-slate-700/50">
                     <div class="overflow-hidden">
-                        <p id="user-display-name" class="text-sm font-semibold text-white truncate">พี่เอ็ม</p>
+                        <p id="user-display-name" class="text-sm font-semibold text-white truncate">ผู้ใช้งาน</p>
                         <div class="flex items-center space-x-1.5 mt-0.5">
                             <span id="user-display-role-badge" class="px-1.5 py-0.5 text-[10px] font-bold rounded bg-amber-500 text-slate-900 uppercase">ADMIN</span>
                             <span id="user-display-email" class="text-[11px] text-slate-400 truncate max-w-[100px]">user@ba.com</span>
@@ -200,7 +184,7 @@
                 </nav>
 
                 <div class="p-3 border-t border-slate-800 text-[11px] text-slate-500 text-center">
-                    Realtime Supabase Dashboard
+                    Google Sheets & Supabase Realtime
                 </div>
             </aside>
 
@@ -375,34 +359,18 @@
         const SUPABASE_KEY = "sb_publishable_gucfZmy3YDzxAjuFZ_OiNQ_7SESDx2m";
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // DEFAULT FALLBACK DATA (IN CASE DB IS EMPTY)
-        const MOCK_USERS = [
-            { id: 1, email: "admin@ba.com", password: "password123", name: "พี่เอ็ม", role: "Admin", createdAt: "2026-01-10 09:00" },
-            { id: 2, email: "staff@ba.com", password: "password123", name: "พี่โอม", role: "Staff", createdAt: "2026-02-15 11:30" },
-            { id: 3, email: "visitor@ba.com", password: "password123", name: "ครูแว่น", role: "Visitor", createdAt: "2026-03-01 14:20" }
-        ];
+        // Google Apps Script Web App URL
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwah5hvQoJKT18k2l5exCus5HNr9ISg-dtgk-2hrwEBnecKcB_kMEqrXI-oNt6Idrbt/exec";
 
-        const MOCK_STUDENTS = [
-            { code: "BA6901", nickname: "น้องแพร", yearModel: "69", status: "ต่อคอร์ส", lastRoom: "ห้องเรียนสถาปัตย์ วันเสาร์" },
-            { code: "BA6902", nickname: "น้องกาย", yearModel: "69", status: "นักเรียนใหม่", lastRoom: "ห้องเรียนสถาปัตย์ วันเสาร์" }
-        ];
+        const ADMIN_EMAIL = "p.roobchird@gmail.com";
 
-        const MOCK_ROUNDS = [{
-            id: "round-10",
-            name: "รอบ 10",
-            classrooms: [{
-                id: "room-10-1",
-                name: "ห้องเรียนสถาปัตย์ วันเสาร์",
-                time: "09.00 - 12.00 น. / 13.00 - 16.00 น.",
-                dates: ["2026-10-03", "2026-10-10"],
-                students: [{ code: "BA6901", nickname: "น้องแพร", yearModel: "69", status: "ต่อคอร์ส", course: "Arch 1", attendance: {} }]
-            }]
-        }];
-
-        let users = [...MOCK_USERS];
-        let databaseStudents = [...MOCK_STUDENTS];
-        let rounds = [...MOCK_ROUNDS];
+        let users = [];
+        let databaseStudents = [];
+        let rounds = [];
         let currentUser = null;
+        let selectedOverviewRoundId = null;
+        let activeAttendanceRoundId = "";
+        let activeAttendanceRoomId = "";
 
         const STUDENT_STATUSES = {
             'ต่อคอร์ส': { bg: 'bg-emerald-500', text: 'text-white' },
@@ -421,71 +389,66 @@
             'ชดเชย': { bg: 'bg-purple-600 text-white' }
         };
 
-        // --- SUPABASE SYNC LOGIC ---
-        async function loadInitialDataFromSupabase() {
+        async function loadDataFromGoogleSheet() {
             try {
-                const { data, error } = await supabaseClient
-                    .from('app_state')
-                    .select('*')
-                    .eq('id', 'main_data')
-                    .single();
-
-                if (error || !data) {
-                    console.log("No data found on Supabase. Seeding default data...");
-                    await initializeSupabaseData();
-                } else {
-                    if (data.users && data.users.length > 0) users = data.users;
-                    if (data.database_students) databaseStudents = data.database_students;
-                    if (data.rounds) rounds = data.rounds;
+                const res = await fetch(GAS_URL + "?action=getAllData");
+                const result = await res.json();
+                if (result.status === "success") {
+                    if (result.students && result.students.length > 0) databaseStudents = result.students;
+                    if (result.users && result.users.length > 0) users = result.users;
+                    if (result.rounds && result.rounds.length > 0) rounds = result.rounds;
                 }
             } catch (err) {
-                console.error("Supabase connect error:", err);
+                console.error("Fetch Google Sheet Error:", err);
             }
-        }
 
-        async function initializeSupabaseData() {
-            await supabaseClient.from('app_state').upsert({
-                id: 'main_data',
-                users: MOCK_USERS,
-                database_students: MOCK_STUDENTS,
-                rounds: MOCK_ROUNDS,
-                updated_at: new Date().toISOString()
-            });
-        }
+            // Fallback mock if empty
+            if (users.length === 0) {
+                users = [
+                    { id: 1, email: ADMIN_EMAIL, password: "password123", name: "Admin (คุณ)", role: "Admin", createdAt: "2026-01-10 09:00" },
+                    { id: 2, email: "staff@ba.com", password: "password123", name: "พี่โอม", role: "Staff", createdAt: "2026-02-15 11:30" }
+                ];
+            }
+            if (databaseStudents.length === 0) {
+                databaseStudents = [
+                    { code: "BA6901", nickname: "น้องแพร", yearModel: "69", status: "ต่อคอร์ส", lastRoom: "ห้องเรียนสถาปัตย์ วันเสาร์" },
+                    { code: "BA6902", nickname: "น้องกาย", yearModel: "69", status: "นักเรียนใหม่", lastRoom: "ห้องเรียนสถาปัตย์ วันเสาร์" }
+                ];
+            }
+            if (rounds.length === 0) {
+                rounds = [{
+                    id: "round-10",
+                    name: "รอบ 10",
+                    classrooms: [{
+                        id: "room-10-1",
+                        name: "ห้องเรียนสถาปัตย์ วันเสาร์",
+                        time: "09.00 - 12.00 น. / 13.00 - 16.00 น.",
+                        dates: ["2026-10-03", "2026-10-10"],
+                        students: [{ code: "BA6901", nickname: "น้องแพร", yearModel: "69", status: "ต่อคอร์ส", course: "Arch 1", attendance: {} }]
+                    }]
+                }];
+            }
 
-        async function saveStateToSupabase() {
-            try {
-                await supabaseClient.from('app_state').upsert({
-                    id: 'main_data',
-                    rounds: rounds,
-                    database_students: databaseStudents,
-                    users: users,
-                    updated_at: new Date().toISOString()
-                });
-            } catch (err) { console.error("Save error:", err); }
+            // Ensure admin
+            let adminUser = users.find(u => u.email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+            if (!adminUser) {
+                users.unshift({ id: Date.now(), email: ADMIN_EMAIL, password: "password123", name: "Admin (คุณ)", role: "Admin", createdAt: "2026-01-10 09:00" });
+            } else if (adminUser.role !== 'Admin') {
+                adminUser.role = 'Admin';
+            }
         }
 
         function subscribeToSupabaseRealtime() {
             supabaseClient.channel('schema-db-changes')
                 .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'app_state', filter: 'id=eq.main_data' }, (payload) => {
-                    const newData = payload.new;
-                    if (newData) {
-                        rounds = newData.rounds || [];
-                        databaseStudents = newData.database_students || [];
-                        users = newData.users || [];
+                    loadDataFromGoogleSheet().then(() => {
                         if (currentUser) {
                             renderOverview();
                             renderDatabaseTable();
                             if (currentUser.role === 'Admin') renderApprovalTable();
                         }
-                    }
+                    });
                 }).subscribe();
-        }
-
-        function fillQuickLogin(email, password) {
-            document.getElementById('login-email').value = email;
-            document.getElementById('login-password').value = password;
-            showToast(`เตรียมเข้าใช้งานด้วย ${email}`);
         }
 
         function toggleAuthMode(mode) {
@@ -503,7 +466,16 @@
             const email = document.getElementById('login-email').value.trim().toLowerCase();
             const password = document.getElementById('login-password').value.trim();
 
-            const foundUser = users.find(u => u.email.toLowerCase() === email && u.password === password);
+            let foundUser = users.find(u => u.email.toLowerCase() === email && u.password === password);
+
+            if (email === ADMIN_EMAIL.toLowerCase()) {
+                if (!foundUser) {
+                    foundUser = { id: Date.now(), email: ADMIN_EMAIL, password: password, name: "Admin (คุณ)", role: "Admin", createdAt: "2026-01-10 09:00" };
+                    users.push(foundUser);
+                } else {
+                    foundUser.role = "Admin";
+                }
+            }
 
             if (!foundUser) {
                 showToast("อีเมลหรือรหัสผ่านไม่ถูกต้อง");
@@ -522,21 +494,20 @@
         function handleRegister(e) {
             e.preventDefault();
             const nickname = document.getElementById('reg-nickname').value.trim();
-            const email = document.getElementById('reg-email').value.trim();
+            const email = document.getElementById('reg-email').value.trim().toLowerCase();
             const password = document.getElementById('reg-password').value.trim();
 
-            if (users.some(u => u.email.toLowerCase() === email.toLowerCase())) {
+            if (users.some(u => u.email.toLowerCase() === email)) {
                 showToast("อีเมลนี้ถูกใช้งานในระบบแล้ว");
                 return;
             }
 
             const now = new Date();
             const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+            const initialRole = (email === ADMIN_EMAIL.toLowerCase()) ? "Admin" : "รออนุมัติ";
 
-            const newUser = { id: Date.now(), email, password, name: nickname, role: "รออนุมัติ", createdAt: dateStr };
-            users.push(newUser);
-            saveStateToSupabase();
-            showToast("สมัครสมาชิกสำเร็จ! กรุณารอ Admin อนุมัติการใช้งาน");
+            users.push({ id: Date.now(), email, password, name: nickname, role: initialRole, createdAt: dateStr });
+            showToast(initialRole === "Admin" ? "สมัครสมาชิกสำเร็จ!" : "สมัครสมาชิกสำเร็จ! กรุณารอ Admin อนุมัติ");
             toggleAuthMode('login');
         }
 
@@ -577,7 +548,15 @@
         function renderOverview() {
             const select = document.getElementById('overview-round-select');
             select.innerHTML = rounds.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+            if (!selectedOverviewRoundId && rounds.length > 0) selectedOverviewRoundId = rounds[0].id;
+            select.value = selectedOverviewRoundId;
+
             document.getElementById('stat-total').textContent = databaseStudents.length;
+        }
+
+        function onOverviewRoundChange(val) {
+            selectedOverviewRoundId = val;
+            renderOverview();
         }
 
         function renderDatabaseTable() {
@@ -621,14 +600,12 @@
             const targetUser = users.find(u => u.id === userId);
             if (targetUser) {
                 targetUser.role = newRole;
-                saveStateToSupabase();
                 showToast(`ปรับสิทธิ์ ${targetUser.name} เป็น ${newRole}`);
             }
         }
 
         function deleteUser(userId) {
             users = users.filter(u => u.id !== userId);
-            saveStateToSupabase();
             renderApprovalTable();
         }
 
@@ -643,12 +620,11 @@
             }, 3000);
         }
 
-        window.onload = function() {
+        window.onload = async function() {
             lucide.createIcons();
-            loadInitialDataFromSupabase();
+            await loadDataFromGoogleSheet();
             subscribeToSupabaseRealtime();
         }
     </script>
 </body>
 </html>
-```eof
