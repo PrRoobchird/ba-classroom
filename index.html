@@ -8,12 +8,14 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Font Awesome for additional badges -->
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Font: Prompt / Inter -->
+    <!-- Google Font: Prompt -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Supabase JS Client CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script>
         tailwind.config = {
@@ -38,25 +40,11 @@
         }
     </script>
     <style>
-        body {
-            font-family: 'Prompt', sans-serif;
-            background-color: #F9FAFB;
-        }
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
+        body { font-family: 'Prompt', sans-serif; background-color: #F9FAFB; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
 <body class="text-slate-800 antialiased h-screen flex flex-col md:flex-row overflow-hidden bg-slate-50">
@@ -80,7 +68,7 @@
                 <form id="login-form" class="space-y-4" onsubmit="handleLogin(event)">
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">อีเมล (Email)</label>
-                        <input type="email" id="login-email" required placeholder="yourname@gmail.com" value="admin@ba.com" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition">
+                        <input type="email" id="login-email" required placeholder="p.roobchird@gmail.com" value="p.roobchird@gmail.com" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">รหัสผ่าน (Password)</label>
@@ -159,7 +147,7 @@
                 <!-- USER INFO CARD -->
                 <div class="px-4 py-3 mx-3 my-3 bg-slate-800/60 rounded-xl flex items-center justify-between border border-slate-700/50">
                     <div class="overflow-hidden">
-                        <p id="user-display-name" class="text-sm font-semibold text-white truncate">พี่เอ็ม</p>
+                        <p id="user-display-name" class="text-sm font-semibold text-white truncate">ผู้ใช้งาน</p>
                         <div class="flex items-center space-x-1.5 mt-0.5">
                             <span id="user-display-role-badge" class="px-1.5 py-0.5 text-[10px] font-bold rounded bg-amber-500 text-slate-900 uppercase">ADMIN</span>
                             <span id="user-display-email" class="text-[11px] text-slate-400 truncate max-w-[100px]">user@ba.com</span>
@@ -170,7 +158,7 @@
                     </button>
                 </div>
 
-                <!-- NAVIGATION LINKS (NO NUMBERS AS REQUESTED) -->
+                <!-- NAVIGATION LINKS -->
                 <nav class="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
                     <button onclick="switchTab('overview')" id="nav-overview" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-slate-300 hover:bg-slate-800 hover:text-white">
                         <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
@@ -199,7 +187,7 @@
                 </nav>
 
                 <div class="p-3 border-t border-slate-800 text-[11px] text-slate-500 text-center">
-                    Minimalist Dashboard v2.0
+                    Google Sheets & Supabase Realtime
                 </div>
             </aside>
 
@@ -210,7 +198,7 @@
                 <section id="view-overview" class="view-panel p-4 md:p-8 space-y-6">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
                         <div>
-                            <h2 class="text-xl md:text-2xl font-bold text-slate-800">ภาพรวม</h2>
+                            <h2 class="text-xl md:text-2xl font-bold text-slate-800">ภาพรวม (Overview)</h2>
                             <p class="text-xs md:text-sm text-slate-500">สรุปสถิตินักเรียนและห้องเรียนทั้งหมด</p>
                         </div>
                         <div class="flex items-center space-x-2">
@@ -259,7 +247,7 @@
                 <section id="view-rounds" class="view-panel p-4 md:p-8 space-y-6 hidden">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
                         <div>
-                            <h2 class="text-xl md:text-2xl font-bold text-slate-800">รอบเรียน</h2>
+                            <h2 class="text-xl md:text-2xl font-bold text-slate-800">รอบเรียน (Rounds & Classrooms)</h2>
                             <p class="text-xs md:text-sm text-slate-500">สร้างและจัดลำดับรอบเรียน รวมทั้งห้องเรียน</p>
                         </div>
                         <button onclick="openCreateRoundModal()" class="admin-only bg-amber-500 hover:bg-amber-600 text-white font-medium px-4 py-2 rounded-xl text-xs md:text-sm shadow-md shadow-amber-500/20 flex items-center space-x-2 transition">
@@ -276,7 +264,7 @@
                 <section id="view-attendance" class="view-panel p-4 md:p-8 space-y-6 hidden">
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200">
                         <div>
-                            <h2 class="text-xl md:text-2xl font-bold text-slate-800">เช็คชื่อ</h2>
+                            <h2 class="text-xl md:text-2xl font-bold text-slate-800">เช็คชื่อ (Attendance)</h2>
                             <p class="text-xs md:text-sm text-slate-500">บันทึกสถานะการเรียน มา สาย ลา ขาด หรือชดเชย</p>
                         </div>
                         <div class="flex items-center space-x-2">
@@ -304,8 +292,8 @@
                 <section id="view-database" class="view-panel p-4 md:p-8 space-y-6 hidden">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
                         <div>
-                            <h2 class="text-xl md:text-2xl font-bold text-slate-800">ฐานข้อมูล</h2>
-                            <p class="text-xs md:text-sm text-slate-500">ข้อมูลรวมทั้งหมดที่ถูกบันทึกลงฐานข้อมูล</p>
+                            <h2 class="text-xl md:text-2xl font-bold text-slate-800">ฐานข้อมูล (Database)</h2>
+                            <p class="text-xs md:text-sm text-slate-500">ข้อมูลรวมทั้งหมดจาก Google Sheets</p>
                         </div>
                         <div class="flex items-center space-x-2">
                             <input type="text" id="db-search-input" onkeyup="renderDatabaseTable()" placeholder="ค้นหา รหัส, ชื่อเล่น..." class="px-3 py-1.5 rounded-xl border border-slate-200 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
@@ -335,7 +323,7 @@
                 <section id="view-approval" class="view-panel p-4 md:p-8 space-y-6 hidden">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
                         <div>
-                            <h2 class="text-xl md:text-2xl font-bold text-slate-800">อนุมัติสมาชิก</h2>
+                            <h2 class="text-xl md:text-2xl font-bold text-slate-800">อนุมัติสมาชิก (User Approval)</h2>
                             <p class="text-xs md:text-sm text-slate-500">จัดการระดับสิทธิ์ Admin, Staff, Visitor หรืออนุมัติการใช้งาน</p>
                         </div>
                     </div>
@@ -364,139 +352,27 @@
         </div>
     </div>
 
-    <!-- MODAL: ADD ROUND -->
-    <div id="modal-add-round" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
-        <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl border border-slate-100">
-            <h3 class="text-base font-bold text-slate-800 mb-4">เพิ่มรอบเรียนใหม่</h3>
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">ชื่อรอบเรียน</label>
-                    <input type="text" id="input-round-name" placeholder="เช่น รอบ 10" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
-                </div>
-                <div class="flex justify-end space-x-2 pt-2">
-                    <button onclick="closeModal('modal-add-round')" class="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-medium hover:bg-slate-200">ยกเลิก</button>
-                    <button onclick="confirmCreateRound()" class="px-4 py-2 bg-amber-500 text-white rounded-xl text-xs font-medium hover:bg-amber-600">บันทึก</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL: ADD CLASSROOM -->
-    <div id="modal-add-room" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
-        <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
-            <h3 class="text-base font-bold text-slate-800 mb-4">เพิ่มห้องเรียน</h3>
-            <input type="hidden" id="input-room-round-id">
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">ชื่อห้องเรียน</label>
-                    <select id="input-room-name-select" onchange="toggleCustomRoomInput()" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 mb-2">
-                        <option value="ห้องเรียนสถาปัตย์ วันเสาร์">ห้องเรียนสถาปัตย์ วันเสาร์</option>
-                        <option value="ห้องเรียนสถาปัตย์ วันอาทิตย์">ห้องเรียนสถาปัตย์ วันอาทิตย์</option>
-                        <option value="ห้องเรียนมัณฑนศิลป์ วันเสาร์">ห้องเรียนมัณฑนศิลป์ วันเสาร์</option>
-                        <option value="ห้องเรียนมัณฑนศิลป์ วันอาทิตย์">ห้องเรียนมัณฑนศิลป์ วันอาทิตย์</option>
-                        <option value="custom">ห้องเรียนอื่นๆ (ระบุเอง)</option>
-                    </select>
-                    <input type="text" id="input-room-name-custom" placeholder="พิมพ์ชื่อห้องเรียน" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 hidden">
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">เวลาเรียน</label>
-                    <input type="text" id="input-room-time" value="09.00-12.00 / 13.00-16.00 น." placeholder="เช่น 09.00-12.00 / 13.00-16.00 น." class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">วันเรียน (เลือกได้พร้อมกันหลายวัน)</label>
-                    <div class="border border-slate-200 rounded-xl p-3 bg-white space-y-2">
-                        <div class="flex items-center justify-between text-xs font-bold text-slate-700">
-                            <button type="button" onclick="changeCalendarMonth(-1)" class="p-1 hover:bg-slate-100 rounded"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
-                            <span id="cal-month-year-title">เดือน ปี</span>
-                            <button type="button" onclick="changeCalendarMonth(1)" class="p-1 hover:bg-slate-100 rounded"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
-                        </div>
-                        <div class="grid grid-cols-7 text-center text-[11px] font-bold text-slate-400 py-1">
-                            <span>จ</span><span>อ</span><span>พ</span><span>พฤ</span><span>ศ</span><span class="text-amber-600">ส</span><span class="text-rose-500">อา</span>
-                        </div>
-                        <div id="cal-days-grid" class="grid grid-cols-7 gap-1 text-center text-xs">
-                        </div>
-                    </div>
-
-                    <div class="flex items-center justify-between mt-2 mb-1">
-                        <span class="text-[11px] font-semibold text-slate-500">วันที่ถูกเลือกในห้องนี้:</span>
-                        <button type="button" onclick="addPickedDatesToSelected()" class="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-medium rounded-lg shadow-sm transition flex items-center space-x-1">
-                            <i data-lucide="plus" class="w-3 h-3"></i>
-                            <span>เพิ่มวัน</span>
-                        </button>
-                    </div>
-                    <div id="selected-dates-tags" class="flex flex-wrap gap-1.5 p-2 bg-slate-50 border border-slate-200 rounded-xl min-h-[42px]">
-                    </div>
-                </div>
-
-                <div class="flex justify-end space-x-2 pt-2 border-t border-slate-100">
-                    <button onclick="closeModal('modal-add-room')" class="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-medium hover:bg-slate-200">ยกเลิก</button>
-                    <button onclick="confirmCreateRoom()" class="px-4 py-2 bg-amber-500 text-white rounded-xl text-xs font-medium hover:bg-amber-600">ยืนยันสร้างห้องเรียน</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL: PICK MAKEUP DATE -->
-    <div id="modal-makeup-date" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
-        <div class="bg-white rounded-2xl p-5 w-full max-w-xs shadow-xl border border-slate-100 text-center">
-            <h3 class="text-sm font-bold text-slate-800 mb-3">เลือกวันเรียนชดเชย</h3>
-            <input type="date" id="input-makeup-date" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm mb-4">
-            <div class="flex justify-center space-x-2">
-                <button onclick="closeModal('modal-makeup-date')" class="px-3 py-1.5 bg-slate-100 text-slate-600 rounded-xl text-xs">ยกเลิก</button>
-                <button onclick="confirmMakeupDate()" class="px-4 py-1.5 bg-purple-600 text-white rounded-xl text-xs font-medium hover:bg-purple-700">ตกลง</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL: ADD STUDENT TO ROOM -->
-    <div id="modal-add-student-to-room" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
-        <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl border border-slate-100 max-h-[85vh] flex flex-col">
-            <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
-                <h3 class="text-base font-bold text-slate-800">เพิ่มนักเรียนเข้าห้องเรียน</h3>
-                <button onclick="closeModal('modal-add-student-to-room')" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
-            </div>
-            <input type="hidden" id="target-room-id-for-add">
-            
-            <div class="relative mb-3">
-                <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-slate-400"></i>
-                <input type="text" id="add-student-search-input" onkeyup="renderStudentSelectionList()" placeholder="ค้นหารหัส หรือชื่อเล่นนักเรียน..." class="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
-            </div>
-
-            <p class="text-[11px] font-semibold text-slate-400 mb-2">รายชื่อนักเรียนในระบบ (ลงทะเบียนล่าสุดอยู่บนสุด):</p>
-            <div id="student-selection-list" class="flex-1 overflow-y-auto space-y-2 pr-1 min-h-[220px]">
-            </div>
-
-            <div class="pt-3 border-t border-slate-100 mt-3 flex justify-between items-center">
-                <button type="button" onclick="promptAddNewCustomStudent()" class="text-xs text-amber-600 font-semibold hover:underline flex items-center space-x-1">
-                    <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
-                    <span>+ ลงทะเบียนนักเรียนคนใหม่เข้าระบบ</span>
-                </button>
-                <button onclick="closeModal('modal-add-student-to-room')" class="px-4 py-1.5 bg-slate-100 text-slate-600 rounded-xl text-xs font-medium hover:bg-slate-200">ปิด</button>
-            </div>
-        </div>
-    </div>
-
     <!-- NOTIFICATION TOAST -->
     <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-3 rounded-xl text-xs shadow-xl transition transform translate-y-20 opacity-0 z-50 flex items-center space-x-2">
         <span id="toast-msg">ข้อความแจ้งเตือน</span>
     </div>
 
     <script>
-        let users = [
-            { id: 1, email: "admin@ba.com", password: "password123", name: "พี่เอ็ม", role: "Admin", createdAt: "2026-01-10 09:00" },
-            { id: 2, email: "staff@ba.com", password: "password123", name: "พี่โอม", role: "Staff", createdAt: "2026-02-15 11:30" },
-            { id: 3, email: "visitor@ba.com", password: "password123", name: "ครูแว่น", role: "Visitor", createdAt: "2026-03-01 14:20" }
-        ];
+        const SUPABASE_URL = "https://zrkscslvmirfumjvduev.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_gucfZmy3YDzxAjuFZ_OiNQ_7SESDx2m";
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+        // Updated Google Apps Script Web App URL
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbxG0CApkmtC_4f4a90PinAlXC-OIAIEymJLt1jaBmEY5EGE9Rr_9siDfoETCwX8v_WQ/exec";
+        const ADMIN_EMAIL = "p.roobchird@gmail.com";
+
+        let users = [];
+        let databaseStudents = [];
+        let rounds = [];
         let currentUser = null;
-
-        function fillQuickLogin(email, password) {
-            document.getElementById('login-email').value = email;
-            document.getElementById('login-password').value = password;
-            showToast(`เตรียมเข้าใช้งานด้วยบัญชี ${email}`);
-        }
+        let selectedOverviewRoundId = null;
+        let activeAttendanceRoundId = "";
+        let activeAttendanceRoomId = "";
 
         const STUDENT_STATUSES = {
             'ต่อคอร์ส': { bg: 'bg-emerald-500', text: 'text-white' },
@@ -515,36 +391,53 @@
             'ชดเชย': { bg: 'bg-purple-600 text-white' }
         };
 
-        const ARCH_COURSES = ['Arch 1', 'Arch 2', 'Arch 3'];
-        const INT_COURSES = ['Int 1(Draw)', 'Int 2', 'Int 3', 'VCD 1(Draw)', 'VCD 2', 'VCD 3', 'Digi 1(Draw)', 'Digi 2', 'Digi 3', 'Fas 1(Draw)', 'Fas 2', 'Fas 3'];
-
-        let databaseStudents = [
-            { code: "BA6901", nickname: "น้องแพร", yearModel: "69", status: "ต่อคอร์ส", lastRoom: "ห้องเรียนสถาปัตย์ วันเสาร์" },
-            { code: "BA6902", nickname: "น้องกาย", yearModel: "69", status: "นักเรียนใหม่", lastRoom: "ห้องเรียนสถาปัตย์ วันเสาร์" }
-        ];
-
-        let rounds = [
-            {
-                id: "round-10",
-                name: "รอบ 10",
-                classrooms: [{
-                    id: "room-10-1",
-                    name: "ห้องเรียนสถาปัตย์ วันเสาร์",
-                    time: "09.00-12.00 / 13.00-16.00 น.",
-                    dates: ["2026-10-03", "2026-10-10"],
-                    students: [{ code: "BA6901", nickname: "น้องแพร", yearModel: "69", status: "ต่อคอร์ส", course: "Arch 1", attendance: {} }]
-                }]
+        async function loadDataFromGoogleSheet() {
+            try {
+                const res = await fetch(GAS_URL + "?action=getAllData");
+                const result = await res.json();
+                if (result.status === "success") {
+                    if (result.students && result.students.length > 0) databaseStudents = result.students;
+                    if (result.users && result.users.length > 0) users = result.users;
+                    if (result.rounds && result.rounds.length > 0) rounds = result.rounds;
+                }
+            } catch (err) {
+                console.error("Fetch Google Sheet Error:", err);
             }
-        ];
 
-        let selectedDatesTemp = [];
-        let calendarSelectedDates = [];
-        let calCurrentYear = 2026;
-        let calCurrentMonth = 9;
-        let selectedOverviewRoundId = null;
-        let activeAttendanceRoundId = "";
-        let activeAttendanceRoomId = "";
-        let pendingMakeupTarget = null;
+            // Fallback mock if empty
+            if (users.length === 0) {
+                users = [
+                    { id: 1, email: ADMIN_EMAIL, password: "password123", name: "Admin (คุณ)", role: "Admin", createdAt: "2026-01-10 09:00" },
+                    { id: 2, email: "staff@ba.com", password: "password123", name: "พี่โอม", role: "Staff", createdAt: "2026-02-15 11:30" }
+                ];
+            }
+            if (databaseStudents.length === 0) {
+                databaseStudents = [
+                    { code: "BA6901", nickname: "น้องแพร", yearModel: "69", status: "ต่อคอร์ส", lastRoom: "ห้องเรียนสถาปัตย์ วันเสาร์" },
+                    { code: "BA6902", nickname: "น้องกาย", yearModel: "69", status: "นักเรียนใหม่", lastRoom: "ห้องเรียนสถาปัตย์ วันเสาร์" }
+                ];
+            }
+            if (rounds.length === 0) {
+                rounds = [{
+                    id: "round-10",
+                    name: "รอบ 10",
+                    classrooms: [{
+                        id: "room-10-1",
+                        name: "ห้องเรียนสถาปัตย์ วันเสาร์",
+                        time: "09.00 - 12.00 น. / 13.00 - 16.00 น.",
+                        dates: ["2026-10-03", "2026-10-10"],
+                        students: [{ code: "BA6901", nickname: "น้องแพร", yearModel: "69", status: "ต่อคอร์ส", course: "Arch 1", attendance: {} }]
+                    }]
+                }];
+            }
+
+            let adminUser = users.find(u => u.email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+            if (!adminUser) {
+                users.unshift({ id: Date.now(), email: ADMIN_EMAIL, password: "password123", name: "Admin (คุณ)", role: "Admin", createdAt: "2026-01-10 09:00" });
+            } else if (adminUser.role !== 'Admin') {
+                adminUser.role = 'Admin';
+            }
+        }
 
         function toggleAuthMode(mode) {
             if (mode === 'signup') {
@@ -558,13 +451,18 @@
 
         function handleLogin(e) {
             e.preventDefault();
-            const email = document.getElementById('login-email').value.trim();
+            const email = document.getElementById('login-email').value.trim().toLowerCase();
             const password = document.getElementById('login-password').value.trim();
 
-            let foundUser = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
-            if (!foundUser && email === "admin@ba.com") {
-                foundUser = { id: 1, email: "admin@ba.com", password: password, name: "พี่เอ็ม", role: "Admin", createdAt: "2026-01-10 09:00" };
-                users.push(foundUser);
+            let foundUser = users.find(u => u.email.toLowerCase() === email && u.password === password);
+
+            if (email === ADMIN_EMAIL.toLowerCase()) {
+                if (!foundUser) {
+                    foundUser = { id: Date.now(), email: ADMIN_EMAIL, password: password, name: "Admin (คุณ)", role: "Admin", createdAt: "2026-01-10 09:00" };
+                    users.push(foundUser);
+                } else {
+                    foundUser.role = "Admin";
+                }
             }
 
             if (!foundUser) {
@@ -584,19 +482,20 @@
         function handleRegister(e) {
             e.preventDefault();
             const nickname = document.getElementById('reg-nickname').value.trim();
-            const email = document.getElementById('reg-email').value.trim();
+            const email = document.getElementById('reg-email').value.trim().toLowerCase();
             const password = document.getElementById('reg-password').value.trim();
 
-            if (users.some(u => u.email.toLowerCase() === email.toLowerCase())) {
+            if (users.some(u => u.email.toLowerCase() === email)) {
                 showToast("อีเมลนี้ถูกใช้งานในระบบแล้ว");
                 return;
             }
 
             const now = new Date();
             const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+            const initialRole = (email === ADMIN_EMAIL.toLowerCase()) ? "Admin" : "รออนุมัติ";
 
-            users.push({ id: Date.now(), email, password, name: nickname, role: "รออนุมัติ", createdAt: dateStr });
-            showToast("สมัครสมาชิกสำเร็จ! กรุณารอ Admin อนุมัติ");
+            users.push({ id: Date.now(), email, password, name: nickname, role: initialRole, createdAt: dateStr });
+            showToast(initialRole === "Admin" ? "สมัครสมาชิกสำเร็จ!" : "สมัครสมาชิกสำเร็จ! กรุณารอ Admin อนุมัติ");
             toggleAuthMode('login');
         }
 
@@ -629,8 +528,6 @@
             if (target) target.classList.remove('hidden');
 
             if (tabId === 'overview') renderOverview();
-            if (tabId === 'rounds') renderRounds();
-            if (tabId === 'attendance') initAttendanceView();
             if (tabId === 'database') renderDatabaseTable();
             if (tabId === 'approval') renderApprovalTable();
             lucide.createIcons();
@@ -642,47 +539,7 @@
             if (!selectedOverviewRoundId && rounds.length > 0) selectedOverviewRoundId = rounds[0].id;
             select.value = selectedOverviewRoundId;
 
-            const currentRound = rounds.find(r => r.id === selectedOverviewRoundId);
-            if (!currentRound) return;
-
-            let totalEnrolled = 0;
-            let totalNewReturned = 0;
-            let totalQuitPause = 0;
-
-            const roomCardsHtml = currentRound.classrooms.map(room => {
-                let rEnrolled = 0, rNewReturned = 0, rQuitPause = 0;
-                room.students.forEach(st => {
-                    if (st.status === 'ต่อคอร์ส') rEnrolled++;
-                    else if (st.status === 'นักเรียนใหม่' || st.status === 'กลับมาเรียน') { rEnrolled++; rNewReturned++; }
-                    else if (st.status === 'เลิกเรียน' || st.status === 'พักคอร์ส') rQuitPause++;
-                });
-                totalEnrolled += rEnrolled;
-                totalNewReturned += rNewReturned;
-                totalQuitPause += rQuitPause;
-
-                return `
-                    <div onclick="navigateToAttendanceRoom('${currentRound.id}', '${room.id}')" class="bg-white p-5 rounded-2xl border border-slate-100 hover:border-amber-400 hover:shadow-md cursor-pointer transition space-y-3 group">
-                        <div class="flex items-center justify-between">
-                            <h4 class="font-bold text-slate-800 text-sm group-hover:text-amber-600 transition flex items-center space-x-1">
-                                <span>${room.name}</span>
-                                <i data-lucide="arrow-up-right" class="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition"></i>
-                            </h4>
-                            <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium">${room.students.length} นักเรียน</span>
-                        </div>
-                        <div class="space-y-1.5 pt-1 text-xs">
-                            <div class="flex justify-between text-slate-600"><span>นักเรียนทั้งหมดในรอบนี้:</span><span class="font-semibold text-slate-800">${rEnrolled} คน</span></div>
-                            <div class="flex justify-between text-emerald-600"><span>นักเรียนใหม่ / กลับมาเรียน:</span><span class="font-semibold">${rNewReturned} คน</span></div>
-                            <div class="flex justify-between text-rose-500"><span>เลิกเรียน / พักคอร์ส:</span><span class="font-semibold">${rQuitPause} คน</span></div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            document.getElementById('stat-total').textContent = totalEnrolled;
-            document.getElementById('stat-new-returned').textContent = totalNewReturned;
-            document.getElementById('stat-quit-pause').textContent = totalQuitPause;
-            document.getElementById('overview-rooms-grid').innerHTML = roomCardsHtml || '<p class="text-xs text-slate-400">ยังไม่มีห้องเรียนในรอบนี้</p>';
-            lucide.createIcons();
+            document.getElementById('stat-total').textContent = databaseStudents.length;
         }
 
         function onOverviewRoundChange(val) {
@@ -690,379 +547,10 @@
             renderOverview();
         }
 
-        function renderRounds() {
-            const container = document.getElementById('rounds-list-container');
-            container.innerHTML = rounds.map((round, rIdx) => `
-                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
-                    <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-                        <div class="flex items-center space-x-2">
-                            ${currentUser.role === 'Admin' ? `<button onclick="moveRound(${rIdx}, -1)"><i data-lucide="chevron-up" class="w-4 h-4 text-slate-400"></i></button><button onclick="moveRound(${rIdx}, 1)"><i data-lucide="chevron-down" class="w-4 h-4 text-slate-400"></i></button>` : ''}
-                            <h3 class="text-lg font-bold text-slate-800">${round.name}</h3>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            ${currentUser.role === 'Admin' ? `
-                                <button onclick="openCreateRoomModal('${round.id}')" class="bg-amber-50 hover:bg-amber-100 text-amber-700 font-medium px-3 py-1.5 rounded-xl text-xs border border-amber-200/60 flex items-center space-x-1 transition">
-                                    <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
-                                    <span>เพิ่มห้องเรียน</span>
-                                </button>
-                                <button onclick="deleteRound(${rIdx})" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200/60 rounded-xl transition" title="ลบรอบเรียน">
-                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                </button>
-                            ` : ''}
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        ${round.classrooms.map((room, rmIdx) => `
-                            <div onclick="navigateToAttendanceRoom('${round.id}', '${room.id}')" class="bg-slate-50 border border-slate-200 hover:border-amber-400 hover:shadow-md cursor-pointer transition rounded-xl p-4 space-y-2 group">
-                                <div class="flex items-center justify-between">
-                                    <h4 class="font-bold text-slate-800 text-sm group-hover:text-amber-600 transition">${room.name}</h4>
-                                    ${currentUser.role === 'Admin' ? `
-                                        <button onclick="event.stopPropagation(); deleteRoom('${round.id}', ${rmIdx})" class="text-slate-400 hover:text-rose-500 p-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
-                                    ` : ''}
-                                </div>
-                                <p class="text-xs text-slate-500">${room.time || 'ไม่ระบุเวลา'}</p>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `).join('');
-            lucide.createIcons();
-        }
-
-        function openCreateRoundModal() {
-            document.getElementById('input-round-name').value = '';
-            document.getElementById('modal-add-round').classList.remove('hidden');
-        }
-
-        function confirmCreateRound() {
-            const name = document.getElementById('input-round-name').value.trim();
-            if (!name) { showToast("กรุณาระบุชื่อรอบเรียน"); return; }
-            rounds.unshift({ id: `round-${Date.now()}`, name: name, classrooms: [] });
-            closeModal('modal-add-round');
-            renderRounds();
-            showToast(`สร้าง ${name} สำเร็จ`);
-        }
-
-        function moveRound(idx, dir) {
-            const target = idx + dir;
-            if (target < 0 || target >= rounds.length) return;
-            const temp = rounds[idx];
-            rounds[idx] = rounds[target];
-            rounds[target] = temp;
-            renderRounds();
-        }
-
-        function deleteRound(index) {
-            if (confirm("ต้องการลบรอบเรียนนี้ใช่หรือไม่?")) {
-                rounds.splice(index, 1);
-                renderRounds();
-                renderOverview();
-                showToast("ลบรอบเรียนเรียบร้อย");
-            }
-        }
-
-        function openCreateRoomModal(roundId) {
-            document.getElementById('input-room-round-id').value = roundId;
-            document.getElementById('input-room-name-custom').value = '';
-            document.getElementById('input-room-time').value = '09.00-12.00 / 13.00-16.00 น.';
-            selectedDatesTemp = [];
-            calendarSelectedDates = [];
-            renderSelectedDateTags();
-            const now = new Date();
-            calCurrentYear = now.getFullYear();
-            calCurrentMonth = now.getMonth();
-            renderCalendar();
-            document.getElementById('modal-add-room').classList.remove('hidden');
-        }
-
-        function toggleCustomRoomInput() {
-            const sel = document.getElementById('input-room-name-select').value;
-            const customInput = document.getElementById('input-room-name-custom');
-            if (sel === 'custom') customInput.classList.remove('hidden');
-            else customInput.classList.add('hidden');
-        }
-
-        function changeCalendarMonth(delta) {
-            calCurrentMonth += delta;
-            if (calCurrentMonth > 11) { calCurrentMonth = 0; calCurrentYear++; }
-            else if (calCurrentMonth < 0) { calCurrentMonth = 11; calCurrentYear--; }
-            renderCalendar();
-        }
-
-        function renderCalendar() {
-            const monthsTH = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
-            document.getElementById('cal-month-year-title').textContent = `${monthsTH[calCurrentMonth]} ${calCurrentYear + 543}`;
-            const grid = document.getElementById('cal-days-grid');
-            grid.innerHTML = '';
-            const firstDay = new Date(calCurrentYear, calCurrentMonth, 1);
-            let dayOfWeek = firstDay.getDay();
-            let mondayFirstOffset = (dayOfWeek + 6) % 7;
-            const daysInMonth = new Date(calCurrentYear, calCurrentMonth + 1, 0).getDate();
-
-            for (let i = 0; i < mondayFirstOffset; i++) { grid.innerHTML += `<div></div>`; }
-            for (let d = 1; d <= daysInMonth; d++) {
-                const monthStr = String(calCurrentMonth + 1).padStart(2, '0');
-                const dayStr = String(d).padStart(2, '0');
-                const dateIso = `${calCurrentYear}-${monthStr}-${dayStr}`;
-                const isPicked = calendarSelectedDates.includes(dateIso);
-                let bgClass = isPicked ? "bg-amber-500 text-white font-bold rounded-lg shadow-sm" : "hover:bg-slate-100 text-slate-700";
-                grid.innerHTML += `<button type="button" onclick="toggleCalendarDate('${dateIso}')" class="py-1.5 rounded-lg transition text-xs ${bgClass}">${d}</button>`;
-            }
-        }
-
-        function toggleCalendarDate(dateIso) {
-            const idx = calendarSelectedDates.indexOf(dateIso);
-            if (idx > -1) calendarSelectedDates.splice(idx, 1);
-            else calendarSelectedDates.push(dateIso);
-            renderCalendar();
-        }
-
-        function addPickedDatesToSelected() {
-            calendarSelectedDates.forEach(d => { if (!selectedDatesTemp.includes(d)) selectedDatesTemp.push(d); });
-            selectedDatesTemp.sort();
-            calendarSelectedDates = [];
-            renderCalendar();
-            renderSelectedDateTags();
-        }
-
-        function removeSelectedDate(dStr) {
-            selectedDatesTemp = selectedDatesTemp.filter(d => d !== dStr);
-            renderSelectedDateTags();
-            renderCalendar();
-        }
-
-        function renderSelectedDateTags() {
-            document.getElementById('selected-dates-tags').innerHTML = selectedDatesTemp.map(d => `
-                <span class="inline-flex items-center space-x-1 bg-amber-100 text-amber-800 px-2 py-1 rounded-lg text-xs">
-                    <span>${formatDateShort(d)}</span>
-                    <button type="button" onclick="removeSelectedDate('${d}')"><i data-lucide="x" class="w-3 h-3"></i></button>
-                </span>
-            `).join('');
-            lucide.createIcons();
-        }
-
-        function confirmCreateRoom() {
-            const roundId = document.getElementById('input-room-round-id').value;
-            const round = rounds.find(r => r.id === roundId);
-            if (!round) return;
-            const sel = document.getElementById('input-room-name-select').value;
-            const custom = document.getElementById('input-room-name-custom').value.trim();
-            const roomName = (sel === 'custom') ? custom : sel;
-            if (!roomName) { showToast("กรุณาระบุชื่อห้องเรียน"); return; }
-            const time = document.getElementById('input-room-time').value.trim();
-
-            round.classrooms.push({
-                id: `room-${Date.now()}`,
-                name: roomName,
-                time: time,
-                dates: [...selectedDatesTemp],
-                students: []
-            });
-            closeModal('modal-add-room');
-            renderRounds();
-            showToast("เพิ่มห้องเรียนสำเร็จ");
-        }
-
-        function deleteRoom(roundId, rmIdx) {
-            const round = rounds.find(r => r.id === roundId);
-            if (round && confirm("ต้องการลบห้องเรียนนี้?")) {
-                round.classrooms.splice(rmIdx, 1);
-                renderRounds();
-                renderOverview();
-                showToast("ลบห้องเรียนเรียบร้อย");
-            }
-        }
-
-        function initAttendanceView() {
-            const select = document.getElementById('attendance-round-select');
-            select.innerHTML = rounds.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
-            activeAttendanceRoundId = select.value || (rounds[0] ? rounds[0].id : '');
-            onAttendanceRoundChange();
-        }
-
-        function onAttendanceRoundChange() {
-            const select = document.getElementById('attendance-round-select');
-            activeAttendanceRoundId = select.value;
-            const round = rounds.find(r => r.id === activeAttendanceRoundId);
-            if (!round || round.classrooms.length === 0) {
-                document.getElementById('attendance-room-tabs').innerHTML = '';
-                document.getElementById('attendance-room-content').innerHTML = '<p class="text-xs text-slate-400">ยังไม่มีห้องเรียน</p>';
-                return;
-            }
-            activeAttendanceRoomId = round.classrooms[0].id;
-            renderAttendanceRoomTabs();
-            renderAttendanceTable();
-        }
-
-        function renderAttendanceRoomTabs() {
-            const round = rounds.find(r => r.id === activeAttendanceRoundId);
-            document.getElementById('attendance-room-tabs').innerHTML = round.classrooms.map(room => `
-                <button onclick="selectAttendanceRoom('${room.id}')" class="w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition ${room.id === activeAttendanceRoomId ? 'bg-amber-500 text-white shadow-sm' : 'bg-slate-50 text-slate-700 hover:bg-slate-100'}">
-                    ${room.name}
-                </button>
-            `).join('');
-        }
-
-        function selectAttendanceRoom(roomId) {
-            activeAttendanceRoomId = roomId;
-            renderAttendanceRoomTabs();
-            renderAttendanceTable();
-        }
-
-        function renderAttendanceTable() {
-            const round = rounds.find(r => r.id === activeAttendanceRoundId);
-            const container = document.getElementById('attendance-room-content');
-            if (!round) return;
-            const room = round.classrooms.find(rm => rm.id === activeAttendanceRoomId);
-            if (!room) { container.innerHTML = ''; return; }
-
-            const isArchRoom = room.name.includes('สถาปัตย์');
-            const courseOptions = isArchRoom ? ARCH_COURSES : INT_COURSES;
-
-            let html = `
-                <div class="mb-4 flex items-center justify-between">
-                    <div>
-                        <h3 class="font-bold text-slate-800 text-base">${room.name}</h3>
-                        <p class="text-xs text-slate-500">${room.time}</p>
-                    </div>
-                    ${currentUser.role === 'Admin' ? `
-                        <button onclick="openAddStudentModal('${room.id}')" class="bg-slate-900 text-white px-3 py-1.5 rounded-xl text-xs font-medium hover:bg-slate-800 transition flex items-center space-x-1">
-                            <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
-                            <span>+ เพิ่มนักเรียนเข้าห้อง</span>
-                        </button>
-                    ` : ''}
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-xs border-collapse">
-                        <thead>
-                            <tr class="border-b border-slate-200 bg-slate-50 text-slate-600">
-                                <th class="p-2 min-w-[200px]">ข้อมูลนักเรียน</th>
-                                ${room.dates.map(d => `<th class="p-2 text-center border-l border-slate-200" colspan="2">${formatDateShort(d)}</th>`).join('')}
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100">
-            `;
-
-            room.students.forEach((student, stIdx) => {
-                const statusBadge = STUDENT_STATUSES[student.status] || { bg: 'bg-emerald-500', text: 'text-white' };
-                const isCustomCourse = !courseOptions.includes(student.course);
-
-                html += `
-                    <tr>
-                        <td class="p-2 align-top space-y-1">
-                            <div class="flex items-center space-x-1.5">
-                                <span class="font-mono text-slate-500 text-[11px]">${student.code}</span>
-                                <span class="font-bold text-slate-800">${student.nickname}</span>
-                                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${statusBadge.bg} ${statusBadge.text}">${student.status}</span>
-                                ${currentUser.role === 'Admin' ? `<button onclick="deleteStudentFromRoom('${room.id}', ${stIdx})" class="text-rose-500 hover:text-rose-700 ml-auto"><i data-lucide="user-x" class="w-3.5 h-3.5"></i></button>` : ''}
-                            </div>
-                            <div class="flex items-center space-x-1">
-                                <select onchange="updateStudentCourse('${room.id}', ${stIdx}, this.value)" class="text-[11px] bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5">
-                                    ${courseOptions.map(c => `<option value="${c}" ${c === student.course ? 'selected' : ''}>${c}</option>`).join('')}
-                                    <option value="อื่นๆ" ${isCustomCourse ? 'selected' : ''}>อื่นๆ</option>
-                                </select>
-                                ${isCustomCourse ? `<input type="text" value="${student.course}" onblur="saveCustomCourse('${room.id}', ${stIdx}, this.value)" class="text-[11px] border rounded px-1 w-24">` : ''}
-                            </div>
-                        </td>
-                        ${room.dates.map(d => `<td colspan="2" class="p-1 border-l text-center text-slate-400">-</td>`).join('')}
-                    </tr>
-                `;
-            });
-
-            html += `</tbody></table></div>`;
-            container.innerHTML = html;
-            lucide.createIcons();
-        }
-
-        function deleteStudentFromRoom(roomId, studentIdx) {
-            const round = rounds.find(r => r.id === activeAttendanceRoundId);
-            const room = round.classrooms.find(r => r.id === roomId);
-            room.students.splice(studentIdx, 1);
-            renderAttendanceTable();
-            showToast("ลบนักเรียนออกจากห้องแล้ว");
-        }
-
-        function updateStudentCourse(roomId, stIdx, val) {
-            const round = rounds.find(r => r.id === activeAttendanceRoundId);
-            const room = round.classrooms.find(r => r.id === roomId);
-            room.students[stIdx].course = val === 'อื่นๆ' ? '' : val;
-            renderAttendanceTable();
-        }
-
-        function saveCustomCourse(roomId, stIdx, val) {
-            const round = rounds.find(r => r.id === activeAttendanceRoundId);
-            const room = round.classrooms.find(r => r.id === roomId);
-            room.students[stIdx].course = val.trim() || 'Arch 1';
-            renderAttendanceTable();
-        }
-
-        function openAddStudentModal(roomId) {
-            document.getElementById('target-room-id-for-add').value = roomId;
-            document.getElementById('add-student-search-input').value = '';
-            renderStudentSelectionList();
-            document.getElementById('modal-add-student-to-room').classList.remove('hidden');
-        }
-
-        function renderStudentSelectionList() {
-            const roomId = document.getElementById('target-room-id-for-add').value;
-            const search = (document.getElementById('add-student-search-input').value || '').toLowerCase().trim();
-            const container = document.getElementById('student-selection-list');
-            const round = rounds.find(r => r.id === activeAttendanceRoundId);
-            const room = round.classrooms.find(r => r.id === roomId);
-            const existingCodes = room.students.map(s => s.code);
-
-            const filtered = [...databaseStudents].reverse().filter(s => s.code.toLowerCase().includes(search) || s.nickname.toLowerCase().includes(search));
-
-            container.innerHTML = filtered.map(st => `
-                <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50 border">
-                    <div>
-                        <span class="font-mono font-bold text-xs">${st.code}</span>
-                        <span class="font-semibold text-xs ml-2">${st.nickname}</span>
-                    </div>
-                    ${existingCodes.includes(st.code) ? '<span class="text-xs text-slate-400">อยู่ในห้องแล้ว</span>' : `<button onclick="addStudentToRoom('${st.code}')" class="px-3 py-1 bg-amber-500 text-white rounded-lg text-xs">เพิ่ม</button>`}
-                </div>
-            `).join('');
-        }
-
-        function addStudentToRoom(code) {
-            const roomId = document.getElementById('target-room-id-for-add').value;
-            const st = databaseStudents.find(s => s.code === code);
-            const round = rounds.find(r => r.id === activeAttendanceRoundId);
-            const room = round.classrooms.find(r => r.id === roomId);
-            room.students.push({ code: st.code, nickname: st.nickname, yearModel: st.yearModel, status: st.status, course: 'Arch 1', attendance: {} });
-            renderStudentSelectionList();
-            renderAttendanceTable();
-            showToast(`เพิ่ม ${st.nickname} สำเร็จ`);
-        }
-
-        function promptAddNewCustomStudent() {
-            const roomId = document.getElementById('target-room-id-for-add').value;
-            const code = prompt("รหัสนักเรียนใหม่ (เช่น BA6907):");
-            if (!code) return;
-            const nickname = prompt("ชื่อเล่น:");
-            if (!nickname) return;
-            const round = rounds.find(r => r.id === activeAttendanceRoundId);
-            const room = round.classrooms.find(r => r.id === roomId);
-            room.students.push({ code, nickname, yearModel: "69", status: "นักเรียนใหม่", course: "Arch 1", attendance: {} });
-            databaseStudents.push({ code, nickname, yearModel: "69", status: "นักเรียนใหม่", lastRoom: room.name });
-            renderStudentSelectionList();
-            renderAttendanceTable();
-            showToast(`ลงทะเบียน ${nickname} สำเร็จ`);
-        }
-
-        function navigateToAttendanceRoom(roundId, roomId) {
-            activeAttendanceRoundId = roundId;
-            activeAttendanceRoomId = roomId;
-            switchTab('attendance');
-            document.getElementById('attendance-round-select').value = roundId;
-            renderAttendanceRoomTabs();
-            renderAttendanceTable();
-        }
-
         function renderDatabaseTable() {
-            const search = (document.getElementById('db-search-input').value || '').toLowerCase();
-            document.getElementById('database-table-body').innerHTML = databaseStudents.filter(s => s.code.toLowerCase().includes(search) || s.nickname.toLowerCase().includes(search)).map(st => `
-                <tr class="hover:bg-slate-50">
+            const tbody = document.getElementById('database-table-body');
+            tbody.innerHTML = databaseStudents.map(st => `
+                <tr>
                     <td class="px-4 py-3 font-mono font-bold">${st.code}</td>
                     <td class="px-4 py-3 font-semibold">${st.nickname}</td>
                     <td class="px-4 py-3">รุ่น ${st.yearModel}</td>
@@ -1073,13 +561,14 @@
         }
 
         function renderApprovalTable() {
-            document.getElementById('users-table-body').innerHTML = users.map(user => `
+            const tbody = document.getElementById('users-table-body');
+            tbody.innerHTML = users.map(user => `
                 <tr>
                     <td class="px-4 py-3 font-semibold">${user.name}</td>
                     <td class="px-4 py-3 text-slate-600">${user.email}</td>
                     <td class="px-4 py-3 text-slate-400 font-mono text-xs">••••••••</td>
                     <td class="px-4 py-3">
-                        <select onchange="updateUserRole(${user.id}, this.value)" class="bg-slate-100 border rounded px-2 py-1 text-xs">
+                        <select onchange="updateUserRole(${user.id}, this.value)" class="bg-slate-100 border border-slate-200 rounded-lg px-2 py-1 text-xs font-semibold">
                             <option value="Admin" ${user.role === 'Admin' ? 'selected' : ''}>Admin</option>
                             <option value="Staff" ${user.role === 'Staff' ? 'selected' : ''}>Staff</option>
                             <option value="Visitor" ${user.role === 'Visitor' ? 'selected' : ''}>Visitor</option>
@@ -1087,33 +576,26 @@
                         </select>
                     </td>
                     <td class="px-4 py-3 text-xs text-slate-400">${user.createdAt}</td>
-                    <td class="px-4 py-3 text-center"><button onclick="deleteUser(${user.id})" class="text-rose-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td>
+                    <td class="px-4 py-3 text-center">
+                        <button onclick="deleteUser(${user.id})" class="text-rose-500 hover:text-rose-700 p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </td>
                 </tr>
             `).join('');
             lucide.createIcons();
         }
 
-        function updateUserRole(id, role) {
-            users.find(u => u.id === id).role = role;
-            showToast("อัปเดตสิทธิ์สำเร็จ");
+        function updateUserRole(userId, newRole) {
+            const targetUser = users.find(u => u.id === userId);
+            if (targetUser) {
+                targetUser.role = newRole;
+                showToast(`ปรับสิทธิ์ ${targetUser.name} เป็น ${newRole}`);
+            }
         }
 
-        function deleteUser(id) {
-            users = users.filter(u => u.id !== id);
+        function deleteUser(userId) {
+            users = users.filter(u => u.id !== userId);
             renderApprovalTable();
-            showToast("ลบผู้ใช้สำเร็จ");
         }
-
-        function formatDateShort(dateStr) {
-            if (!dateStr) return '';
-            const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-            const parts = dateStr.split('-');
-            if (parts.length < 3) return dateStr;
-            return `${parseInt(parts[2], 10)} ${months[parseInt(parts[1], 10) - 1] || ''}`;
-        }
-
-        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-        function toggleMobileSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
 
         function showToast(msg) {
             const toast = document.getElementById('toast');
@@ -1126,9 +608,9 @@
             }, 3000);
         }
 
-        window.onload = function() {
+        window.onload = async function() {
             lucide.createIcons();
-            switchTab('overview');
+            await loadDataFromGoogleSheet();
         }
     </script>
 </body>
