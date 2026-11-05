@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Prompt', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --color-muji-bg: #f7f4ee;
+  --color-muji-card: #fdfbf7;
+  --color-muji-border: #e7e1d8;
+  --color-muji-border-light: #eee9e0;
+  --color-muji-text: #2d2825;
+  --color-muji-text-muted: #7a7267;
+  --color-muji-accent: #c06a35;
+  --color-muji-accent-hover: #aa5b2b;
+  --color-muji-dark: #282523;
+  --color-muji-dark-surface: #332f2b;
+  --color-muji-dark-border: #443f3a;
+  --color-muji-matcha: #4a7a58;
+  --color-muji-slate: #4c7285;
+  --color-muji-amber: #c6893b;
+  --color-muji-brick: #b2534e;
+  --color-muji-clay: #ba6a38;
+}
+
+body {
+  font-family: 'Prompt', sans-serif;
+  background-color: #f7f4ee;
+  color: #2d2825;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f0ebe2;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb {
+  background: #d4cbbe;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #b5a999;
+}
