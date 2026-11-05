@@ -2,7 +2,9 @@ import { DatabaseStudent, Round, StudentStatus, User } from './types';
 
 export const ADMIN_EMAIL = 'p.roobchird@gmail.com';
 export const ADMIN_PASSWORD = '21052528mM';
-export const GAS_URL = 'https://script.google.com/macros/s/AKfycbxG0CApkmtC_4f4a90PinAlXC-OIAIEymJLt1jaBmEY5EGE9Rr_9siDfoETCwX8v_WQ/exec';
+export const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL as string) || '';
+export const SUPABASE_KEY = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string) || (import.meta.env.VITE_SUPABASE_ANON_KEY as string) || '';
+export const GAS_URL = (import.meta.env.VITE_GAS_URL as string) || 'https://script.google.com/macros/s/AKfycbxG0CApkmtC_4f4a90PinAlXC-OIAIEymJLt1jaBmEY5EGE9Rr_9siDfoETCwX8v_WQ/exec';
 
 export const STUDENT_STATUSES: Record<StudentStatus, { bg: string; text: string }> = {
   'ต่อคอร์ส': { bg: 'bg-[#4a7a58]', text: 'text-white' },

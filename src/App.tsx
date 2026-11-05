@@ -20,7 +20,9 @@ import {
   UserPlus,
   UserX,
   Search,
+  RefreshCw,
 } from 'lucide-react';
+import { isSupabaseConfigured, fetchRemoteState, saveRemoteState } from './supabase';
 import {
   ActiveTab,
   Classroom,
@@ -178,7 +180,15 @@ export default function App() {
     }, 3200);
   };
 
-  // Sync to localStorage
+  // Cloud Sync State
+  const [cloudStatus, setCloudStatus] = useState<'synced' | 'syncing' | 'offline' | 'error'>(
+    isSupabaseConfigured ? 'synced' : 'offline'
+  );
+
+  // References to prevent premature auto-saving before initial cloud fetch completes
+  const isCloudLoadedRef = React.useRef(false);
+
+  // Sync to localStorage as offline cache
   useEffect(() => {
     localStorage.setItem('ba_users', JSON.stringify(users));
   }, [users]);
@@ -198,6 +208,150 @@ export default function App() {
       localStorage.removeItem('ba_current_user');
     }
   }, [currentUser]);
+
+  // Initial load from Supabase Cloud
+  useEffect(() => {
+    let isMounted = true;
+    async function initCloudData() {
+      if (!isSupabaseConfigured) {
+        setCloudStatus('offline');
+        isCloudLoadedRef.current = true;
+        return;
+      }
+
+      setCloudStatus('syncing');
+      try {
+        // 1. Load rounds from Supabase
+        const remoteRounds = await fetchRemoteState<Round[]>('rounds');
+        if (isMounted) {
+          if (remoteRounds && Array.isArray(remoteRounds) && remoteRounds.length > 0) {
+            setRounds(remoteRounds);
+          } else {
+            // Initialize Supabase with current rounds
+            await saveRemoteState('rounds', rounds);
+          }
+        }
+
+        // 2. Load students from Supabase
+        const remoteStudents = await fetchRemoteState<DatabaseStudent[]>('students');
+        if (isMounted) {
+          if (remoteStudents && Array.isArray(remoteStudents) && remoteStudents.length > 0) {
+            setDatabaseStudents(remoteStudents);
+          } else {
+            await saveRemoteState('students', databaseStudents);
+          }
+        }
+
+        // 3. Load users from Supabase
+        const remoteUsers = await fetchRemoteState<User[]>('users');
+        if (isMounted) {
+          if (remoteUsers && Array.isArray(remoteUsers) && remoteUsers.length > 0) {
+            const adminIdx = remoteUsers.findIndex((u) => u.email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+            if (adminIdx >= 0) {
+              remoteUsers[adminIdx] = {
+                ...remoteUsers[adminIdx],
+                password: ADMIN_PASSWORD,
+                role: 'Admin',
+              };
+            } else {
+              remoteUsers.unshift({
+                id: 1,
+                email: ADMIN_EMAIL,
+                password: ADMIN_PASSWORD,
+                name: 'Admin (คุณ)',
+                role: 'Admin',
+                createdAt: '2026-01-10 09:00',
+              });
+            }
+            setUsers(remoteUsers);
+          } else {
+            await saveRemoteState('users', users);
+          }
+        }
+
+        if (isMounted) {
+          setCloudStatus('synced');
+          isCloudLoadedRef.current = true;
+        }
+      } catch (err) {
+        console.warn('Supabase cloud init error:', err);
+        if (isMounted) {
+          setCloudStatus('error');
+          isCloudLoadedRef.current = true;
+        }
+      }
+    }
+
+    initCloudData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Debounced Auto-save rounds to Supabase when changed
+  useEffect(() => {
+    if (!isCloudLoadedRef.current || !isSupabaseConfigured) return;
+    const timer = setTimeout(async () => {
+      setCloudStatus('syncing');
+      const ok = await saveRemoteState('rounds', rounds);
+      setCloudStatus(ok ? 'synced' : 'error');
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [rounds]);
+
+  // Debounced Auto-save students to Supabase when changed
+  useEffect(() => {
+    if (!isCloudLoadedRef.current || !isSupabaseConfigured) return;
+    const timer = setTimeout(async () => {
+      setCloudStatus('syncing');
+      const ok = await saveRemoteState('students', databaseStudents);
+      setCloudStatus(ok ? 'synced' : 'error');
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [databaseStudents]);
+
+  // Debounced Auto-save users to Supabase when changed
+  useEffect(() => {
+    if (!isCloudLoadedRef.current || !isSupabaseConfigured) return;
+    const timer = setTimeout(async () => {
+      setCloudStatus('syncing');
+      const ok = await saveRemoteState('users', users);
+      setCloudStatus(ok ? 'synced' : 'error');
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [users]);
+
+  // Manual Cloud Sync Function
+  const handleManualSync = async () => {
+    if (!isSupabaseConfigured) {
+      showToast('ยังไม่ได้ตั้งค่า Supabase บน Vercel');
+      return;
+    }
+    setCloudStatus('syncing');
+    showToast('กำลังซิงค์ข้อมูลกับคลาวด์...');
+    try {
+      const remoteRounds = await fetchRemoteState<Round[]>('rounds');
+      if (remoteRounds && Array.isArray(remoteRounds) && remoteRounds.length > 0) {
+        setRounds(remoteRounds);
+      } else {
+        await saveRemoteState('rounds', rounds);
+      }
+
+      const remoteStudents = await fetchRemoteState<DatabaseStudent[]>('students');
+      if (remoteStudents && Array.isArray(remoteStudents) && remoteStudents.length > 0) {
+        setDatabaseStudents(remoteStudents);
+      } else {
+        await saveRemoteState('students', databaseStudents);
+      }
+
+      setCloudStatus('synced');
+      showToast('ซิงค์ข้อมูลกับคลาวด์สำเร็จแล้ว');
+    } catch (err) {
+      setCloudStatus('error');
+      showToast('การซิงค์ขัดข้อง โปรดตรวจสอบการเชื่อมต่อ');
+    }
+  };
 
   // Initial load from GAS if available
   useEffect(() => {
@@ -1186,8 +1340,34 @@ export default function App() {
           )}
         </nav>
 
-        <div className="p-3 border-t border-[#3b3530] text-[11px] text-[#8e8578] text-center">
-          Google Sheets & Supabase Realtime
+        <div className="p-3 border-t border-[#3b3530] flex items-center justify-between text-xs text-[#a89f92]">
+          <div className="flex items-center space-x-2">
+            <span
+              className={`w-2 h-2 rounded-full ${
+                cloudStatus === 'synced'
+                  ? 'bg-emerald-400'
+                  : cloudStatus === 'syncing'
+                  ? 'bg-amber-400 animate-pulse'
+                  : 'bg-red-400'
+              }`}
+            />
+            <span className="text-[11px]">
+              {cloudStatus === 'synced'
+                ? 'ซิงค์คลาวด์แล้ว'
+                : cloudStatus === 'syncing'
+                ? 'กำลังซิงค์...'
+                : cloudStatus === 'error'
+                ? 'เชื่อมต่อคลาวด์ไม่สำเร็จ'
+                : 'ออฟไลน์ (Local)'}
+            </span>
+          </div>
+          <button
+            onClick={handleManualSync}
+            title="กดเพื่อซิงค์ข้อมูลกับคลาวด์ทันที"
+            className="p-1 rounded-md hover:bg-[#3b3530] text-[#d6cebf] hover:text-white transition cursor-pointer"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${cloudStatus === 'syncing' ? 'animate-spin text-[#c06a35]' : ''}`} />
+          </button>
         </div>
       </aside>
 
