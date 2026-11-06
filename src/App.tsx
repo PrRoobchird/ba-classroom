@@ -168,8 +168,9 @@ export default function App() {
   const [newStudentNickname, setNewStudentNickname] = useState('');
   const [newStudentYearModel, setNewStudentYearModel] = useState('69');
 
-  // Search input for Database tab
+  // Search input and sort order for Database tab (default: ลำดับที่มากกว่าอยู่ด้านบนเสมอ)
   const [dbSearchTerm, setDbSearchTerm] = useState('');
+  const [dbSortOrder, setDbSortOrder] = useState<'desc' | 'asc'>('desc');
 
   // Toast
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -916,7 +917,7 @@ export default function App() {
             if (rm.id !== targetRoomIdForAdd) return rm;
             return {
               ...rm,
-              students: [...rm.students, newRoomStudent],
+              students: [newRoomStudent, ...rm.students],
             };
           }),
         };
@@ -927,7 +928,7 @@ export default function App() {
       prev.map((s) => (s.code === studentCode ? { ...s, lastRoom: room.name } : s))
     );
 
-    showToast(`เพิ่ม ${dbStudent.nickname} เข้าห้องเรียนแล้ว`);
+    showToast(`เพิ่ม ${dbStudent.nickname} เข้าห้องเรียนแล้ว (อยู่บนสุด)`);
   };
 
   const handleCreateCustomStudent = (e: React.FormEvent) => {
@@ -964,21 +965,20 @@ export default function App() {
             if (rm.id !== targetRoomIdForAdd) return rm;
             return {
               ...rm,
-              students: [...rm.students, newRoomStudent],
+              students: [newRoomStudent, ...rm.students],
             };
           }),
         };
       })
     );
 
-    // Also add to databaseStudents if not already present
+    // Also add to databaseStudents at the top if not already present
     setDatabaseStudents((prev) => {
       const exists = prev.some((s) => s.code === code);
       if (exists) {
         return prev.map((s) => (s.code === code ? { ...s, lastRoom: room.name } : s));
       }
       return [
-        ...prev,
         {
           code,
           nickname,
@@ -986,6 +986,7 @@ export default function App() {
           status: 'นักเรียนใหม่',
           lastRoom: room.name,
         },
+        ...prev,
       ];
     });
 
@@ -1059,6 +1060,24 @@ export default function App() {
     return { blanks, days };
   }, [calCurrentYear, calCurrentMonth]);
 
+  // Helper to count only active students (ต่อคอร์ส + นักเรียนใหม่ + กลับมาเรียน), strictly excluding พักคอร์ส and เลิกเรียน
+  const getActiveStudentsCount = (students: RoomStudent[] | undefined): number => {
+    if (!students || !Array.isArray(students)) return 0;
+    return students.filter((st) => {
+      const s = String(st.status || '').trim();
+      if (s.includes('เลิกเรียน') || s.includes('พักคอร์ส')) return false;
+      return true;
+    }).length;
+  };
+
+  const getQuitPauseStudentsCount = (students: RoomStudent[] | undefined): number => {
+    if (!students || !Array.isArray(students)) return 0;
+    return students.filter((st) => {
+      const s = String(st.status || '').trim();
+      return s.includes('เลิกเรียน') || s.includes('พักคอร์ส');
+    }).length;
+  };
+
   // Overview calculations
   const overviewStats = useMemo(() => {
     const curRound = rounds.find((r) => r.id === selectedOverviewRoundId);
@@ -1076,13 +1095,15 @@ export default function App() {
       let rQuitPause = 0;
 
       room.students.forEach((st) => {
-        if (st.status === 'ต่อคอร์ส') {
-          rEnrolled++;
-        } else if (st.status === 'นักเรียนใหม่' || st.status === 'กลับมาเรียน') {
-          rEnrolled++;
-          rNewReturned++;
-        } else if (st.status === 'เลิกเรียน' || st.status === 'พักคอร์ส') {
+        const s = String(st.status || '').trim();
+        if (s.includes('เลิกเรียน') || s.includes('พักคอร์ส')) {
           rQuitPause++;
+        } else {
+          // นับเฉพาะนักเรียนที่ต่อคอร์ส รวมกับนักเรียนใหม่ และนักเรียนที่กลับมาเรียน
+          rEnrolled++;
+          if (s.includes('นักเรียนใหม่') || s.includes('กลับมาเรียน')) {
+            rNewReturned++;
+          }
         }
       });
 
@@ -1239,12 +1260,19 @@ export default function App() {
   );
   const canEditAttendance = currentUser.role === 'Admin' || currentUser.role === 'Staff';
 
-  // Filtered students for database view
-  const filteredDbStudents = databaseStudents.filter(
-    (s) =>
-      s.code.toLowerCase().includes(dbSearchTerm.toLowerCase()) ||
-      s.nickname.toLowerCase().includes(dbSearchTerm.toLowerCase())
-  );
+  // Filtered and sorted students for database view (ค่าเริ่มต้นเรียงลำดับที่มากกว่าไว้ด้านบนเสมอ)
+  const filteredDbStudents = useMemo(() => {
+    return [...databaseStudents]
+      .filter(
+        (s) =>
+          s.code.toLowerCase().includes(dbSearchTerm.toLowerCase()) ||
+          s.nickname.toLowerCase().includes(dbSearchTerm.toLowerCase())
+      )
+      .sort((a, b) => {
+        const cmp = b.code.localeCompare(a.code, undefined, { numeric: true, sensitivity: 'base' });
+        return dbSortOrder === 'desc' ? cmp : -cmp;
+      });
+  }, [databaseStudents, dbSearchTerm, dbSortOrder]);
 
   return (
     <div className="w-full h-screen flex flex-col md:flex-row overflow-hidden bg-[#f7f4ee] font-sans text-[#2d2825]">
@@ -1506,7 +1534,7 @@ export default function App() {
                           <ArrowUpRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition" />
                         </h4>
                         <span className="text-xs md:text-sm bg-[#eee7dc] text-[#2d2825] px-2.5 py-0.5 rounded-full font-bold">
-                          {rEnrolled}
+                          {rEnrolled} คน
                         </span>
                       </div>
                       <div className="space-y-1.5 pt-1 text-xs">
@@ -1647,12 +1675,11 @@ export default function App() {
                                 </h4>
                               </div>
                               <div className="flex items-center space-x-2">
-                                <span className="text-xs md:text-sm text-[#2d2825] font-bold bg-[#fdfbf7] px-2.5 py-0.5 rounded-lg border border-[#ded7cc]">
-                                  {
-                                    room.students.filter(
-                                      (st) => st.status !== 'เลิกเรียน' && st.status !== 'พักคอร์ส'
-                                    ).length
-                                  }
+                                <span
+                                  title="จำนวนนักเรียนที่เรียนจริง (ต่อคอร์ส + นักเรียนใหม่ + กลับมาเรียน ไม่รวมพักคอร์สหรือเลิกเรียน)"
+                                  className="text-xs md:text-sm text-[#2d2825] font-bold bg-[#fdfbf7] px-2.5 py-0.5 rounded-lg border border-[#ded7cc]"
+                                >
+                                  {getActiveStudentsCount(room.students)} คน
                                 </span>
                                 {currentUser.role === 'Admin' && (
                                   <button
@@ -2120,7 +2147,18 @@ export default function App() {
                 <table className="w-full text-left text-xs md:text-sm text-[#2d2825]">
                   <thead className="bg-[#f4efe6] text-[#696156] font-semibold border-b border-[#e7e1d8]">
                     <tr>
-                      <th className="px-4 py-3">รหัส</th>
+                      <th
+                        onClick={() => setDbSortOrder((prev) => (prev === 'desc' ? 'asc' : 'desc'))}
+                        className="px-4 py-3 cursor-pointer select-none hover:text-[#c06a35] transition"
+                        title="คลิกเพื่อสลับเรียงลำดับมากไปน้อย / น้อยไปมาก"
+                      >
+                        <div className="flex items-center space-x-1.5">
+                          <span>รหัส</span>
+                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-[#e8e0d5] text-[#5c554b]">
+                            {dbSortOrder === 'desc' ? 'มาก ➔ น้อย' : 'น้อย ➔ มาก'}
+                          </span>
+                        </div>
+                      </th>
                       <th className="px-4 py-3">ชื่อเล่น</th>
                       <th className="px-4 py-3">รุ่นปีการศึกษา</th>
                       <th className="px-4 py-3">สถานะ (อัปเดตล่าสุด)</th>
