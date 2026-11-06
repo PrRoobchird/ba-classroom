@@ -134,6 +134,7 @@ export default function App() {
   const [selectedOverviewRoundId, setSelectedOverviewRoundId] = useState<string>('');
   const [activeAttendanceRoundId, setActiveAttendanceRoundId] = useState<string>('');
   const [activeAttendanceRoomId, setActiveAttendanceRoomId] = useState<string>('');
+  const [isGasSyncing, setIsGasSyncing] = useState(false);
 
   // Modals
   const [showAddRoundModal, setShowAddRoundModal] = useState(false);
@@ -353,46 +354,96 @@ export default function App() {
     }
   };
 
-  // Initial load from GAS if available
-  useEffect(() => {
-    async function loadDataFromGas() {
-      try {
-        const res = await fetch(GAS_URL + '?action=getAllData');
-        const result = await res.json();
-        if (result.status === 'success') {
-          if (result.students && result.students.length > 0) {
-            setDatabaseStudents(result.students);
-          }
-          if (result.users && result.users.length > 0) {
-            const gasUsers: User[] = result.users;
-            const adminIdx = gasUsers.findIndex((u) => u.email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
-            if (adminIdx >= 0) {
-              gasUsers[adminIdx] = {
-                ...gasUsers[adminIdx],
-                password: ADMIN_PASSWORD,
-                role: 'Admin',
-              };
-            } else {
-              gasUsers.unshift({
-                id: 1,
-                email: ADMIN_EMAIL,
-                password: ADMIN_PASSWORD,
-                name: 'Admin (คุณ)',
-                role: 'Admin',
-                createdAt: '2026-01-10 09:00',
-              });
-            }
-            setUsers(gasUsers);
-          }
-          if (result.rounds && result.rounds.length > 0) {
-            setRounds(result.rounds);
-          }
-        }
-      } catch (err) {
-        console.warn('Google Sheet sync note:', err);
+  // Robust Google Sheet Data Parser supporting Thai columns and various JSON structures
+  const parseGoogleSheetStudents = (raw: unknown): DatabaseStudent[] => {
+    let list: Array<Record<string, unknown>> = [];
+    if (Array.isArray(raw)) {
+      list = raw as Array<Record<string, unknown>>;
+    } else if (raw && typeof raw === 'object') {
+      const obj = raw as Record<string, unknown>;
+      if (Array.isArray(obj.students)) {
+        list = obj.students as Array<Record<string, unknown>>;
+      } else if (Array.isArray(obj.data)) {
+        list = obj.data as Array<Record<string, unknown>>;
       }
     }
-    loadDataFromGas();
+
+    const validStatuses: StudentStatus[] = ['ต่อคอร์ส', 'นักเรียนใหม่', 'กลับมาเรียน', 'เลิกเรียน', 'พักคอร์ส'];
+
+    return list
+      .map((item) => {
+        const code = String(
+          item['รหัส'] || item['code'] || item['รหัสนักเรียน'] || item['ID'] || ''
+        ).trim();
+        const nickname = String(
+          item['ชื่อเล่น'] || item['nickname'] || item['ชื่อ'] || ''
+        ).trim();
+        const yearModel = String(
+          item['รุ่นปีการศึกษา'] || item['yearModel'] || item['รุ่น'] || ''
+        ).trim();
+        let status = String(
+          item['สถานะ'] || item['status'] || 'ต่อคอร์ส'
+        ).trim() as StudentStatus;
+        if (!validStatuses.includes(status)) {
+          status = 'ต่อคอร์ส';
+        }
+        const lastRoom = String(
+          item['กลุ่มหลักสูตร'] || item['lastRoom'] || item['ห้องเรียนล่าสุด'] || ''
+        ).trim();
+
+        if (!code && !nickname) return null;
+        return {
+          code: code || 'N/A',
+          nickname: nickname || '-',
+          yearModel: yearModel || '-',
+          status,
+          lastRoom: lastRoom || undefined,
+        } as DatabaseStudent;
+      })
+      .filter((s): s is DatabaseStudent => s !== null);
+  };
+
+  // Google Sheet Data Loader with optional user toast
+  const loadDataFromGas = async (silent = true) => {
+    if (!GAS_URL) return;
+    setIsGasSyncing(true);
+    try {
+      // Append cache buster so Google does not return cached stale data
+      const separator = GAS_URL.includes('?') ? '&' : '?';
+      const fetchUrl = `${GAS_URL}${separator}action=getAllData&_t=${Date.now()}`;
+      const res = await fetch(fetchUrl);
+      const result = await res.json();
+
+      const parsedStudents = parseGoogleSheetStudents(result);
+      if (parsedStudents.length > 0) {
+        setDatabaseStudents(parsedStudents);
+        // Persist to Supabase Cloud so all devices receive the updated roster
+        if (isSupabaseConfigured) {
+          saveRemoteState('students', parsedStudents);
+        }
+        if (!silent) {
+          showToast(`ซิงค์ข้อมูลนักเรียน ${parsedStudents.length} คน จาก Google Sheet สำเร็จ`);
+        }
+      } else if (!silent) {
+        showToast('ดึงข้อมูลจาก Google Sheet สำเร็จ แต่ไม่พบรายการนักเรียน');
+      }
+    } catch (err) {
+      console.warn('Google Sheet sync note:', err);
+      if (!silent) {
+        showToast('ไม่สามารถดึงข้อมูลจาก Google Sheet ได้ โปรดตรวจสอบสิทธิ์การแชร์ (Anyone)');
+      }
+    } finally {
+      setIsGasSyncing(false);
+    }
+  };
+
+  // Initial load and periodic polling (every 30 seconds) from Google Sheet
+  useEffect(() => {
+    loadDataFromGas(true);
+    const interval = setInterval(() => {
+      loadDataFromGas(true);
+    }, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   // Set default selected round for Overview & Attendance
@@ -2037,7 +2088,16 @@ export default function App() {
                 </h2>
                 <p className="text-xs md:text-sm text-[#7a7267]">ข้อมูลรวมทั้งหมดจาก Google Sheets</p>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => loadDataFromGas(false)}
+                  disabled={isGasSyncing}
+                  className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-[#c06a35] hover:bg-[#aa5b2b] text-white text-xs md:text-sm font-medium shadow-sm transition cursor-pointer disabled:opacity-50"
+                  title="ดึงข้อมูลล่าสุดจาก Google Sheet ทันที"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isGasSyncing ? 'animate-spin' : ''}`} />
+                  <span>{isGasSyncing ? 'กำลังดึงข้อมูล...' : 'ซิงค์ Google Sheet'}</span>
+                </button>
                 <div className="relative">
                   <Search className="w-4 h-4 absolute left-3 top-2.5 text-[#9e9589]" />
                   <input
