@@ -1494,7 +1494,7 @@ export default function App() {
                 <p className="text-xs text-[#7a7267]">ยังไม่มีห้องเรียนในรอบนี้</p>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {overviewStats.roomStats.map(({ room, rNewReturned, rQuitPause }) => (
+                  {overviewStats.roomStats.map(({ room, rEnrolled, rNewReturned, rQuitPause }) => (
                     <div
                       key={room.id}
                       onClick={() => navigateToAttendanceRoom(selectedOverviewRoundId, room.id)}
@@ -1506,7 +1506,7 @@ export default function App() {
                           <ArrowUpRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition" />
                         </h4>
                         <span className="text-xs md:text-sm bg-[#eee7dc] text-[#2d2825] px-2.5 py-0.5 rounded-full font-bold">
-                          {room.students.length}
+                          {rEnrolled}
                         </span>
                       </div>
                       <div className="space-y-1.5 pt-1 text-xs">
@@ -1648,7 +1648,11 @@ export default function App() {
                               </div>
                               <div className="flex items-center space-x-2">
                                 <span className="text-xs md:text-sm text-[#2d2825] font-bold bg-[#fdfbf7] px-2.5 py-0.5 rounded-lg border border-[#ded7cc]">
-                                  {room.students.length}
+                                  {
+                                    room.students.filter(
+                                      (st) => st.status !== 'เลิกเรียน' && st.status !== 'พักคอร์ส'
+                                    ).length
+                                  }
                                 </span>
                                 {currentUser.role === 'Admin' && (
                                   <button
