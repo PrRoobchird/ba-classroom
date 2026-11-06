@@ -607,6 +607,14 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    setMobileSidebarOpen(false);
+    setShowAddRoundModal(false);
+    setShowAddRoomModal(false);
+    setShowAddStudentModal(false);
+    setShowMakeupModal(false);
+    setShowNewStudentForm(false);
+    setAuthErrorMessage(null);
+    setAuthMode('login');
     setCurrentUser(null);
     showToast('ออกจากระบบเรียบร้อย');
   };
@@ -1168,6 +1176,20 @@ export default function App() {
     return { totalEnrolled, totalNewReturned, totalQuitPause, roomStats };
   }, [rounds, selectedOverviewRoundId]);
 
+  // Filtered and sorted students for database view (ค่าเริ่มต้นเรียงลำดับที่มากกว่าไว้ด้านบนเสมอ)
+  const filteredDbStudents = useMemo(() => {
+    return [...databaseStudents]
+      .filter(
+        (s) =>
+          s.code.toLowerCase().includes(dbSearchTerm.toLowerCase()) ||
+          s.nickname.toLowerCase().includes(dbSearchTerm.toLowerCase())
+      )
+      .sort((a, b) => {
+        const cmp = b.code.localeCompare(a.code, undefined, { numeric: true, sensitivity: 'base' });
+        return dbSortOrder === 'desc' ? cmp : -cmp;
+      });
+  }, [databaseStudents, dbSearchTerm, dbSortOrder]);
+
   // If not logged in, render the Auth Screen (Minimal Muji Theme)
   if (!currentUser) {
     return (
@@ -1359,21 +1381,7 @@ export default function App() {
   const activeAttendanceRoom = activeAttendanceRound?.classrooms.find(
     (c) => c.id === activeAttendanceRoomId
   );
-  const canEditAttendance = currentUser.role === 'Admin' || currentUser.role === 'Staff';
-
-  // Filtered and sorted students for database view (ค่าเริ่มต้นเรียงลำดับที่มากกว่าไว้ด้านบนเสมอ)
-  const filteredDbStudents = useMemo(() => {
-    return [...databaseStudents]
-      .filter(
-        (s) =>
-          s.code.toLowerCase().includes(dbSearchTerm.toLowerCase()) ||
-          s.nickname.toLowerCase().includes(dbSearchTerm.toLowerCase())
-      )
-      .sort((a, b) => {
-        const cmp = b.code.localeCompare(a.code, undefined, { numeric: true, sensitivity: 'base' });
-        return dbSortOrder === 'desc' ? cmp : -cmp;
-      });
-  }, [databaseStudents, dbSearchTerm, dbSortOrder]);
+  const canEditAttendance = currentUser ? (currentUser.role === 'Admin' || currentUser.role === 'Staff') : false;
 
   return (
     <div className="w-full h-screen flex flex-col md:flex-row overflow-hidden bg-[#f7f4ee] font-sans text-[#2d2825]">
