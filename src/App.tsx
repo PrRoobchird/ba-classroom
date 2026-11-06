@@ -125,8 +125,21 @@ export default function App() {
 
   // Auth screen mode
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
+  const [rememberPassword, setRememberPassword] = useState(() => {
+    return localStorage.getItem('ba_remember_password') === 'true';
+  });
+  const [loginEmail, setLoginEmail] = useState(() => {
+    if (localStorage.getItem('ba_remember_password') === 'true') {
+      return localStorage.getItem('ba_saved_email') || '';
+    }
+    return '';
+  });
+  const [loginPassword, setLoginPassword] = useState(() => {
+    if (localStorage.getItem('ba_remember_password') === 'true') {
+      return localStorage.getItem('ba_saved_password') || '';
+    }
+    return '';
+  });
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [authErrorMessage, setAuthErrorMessage] = useState<string | null>(null);
   const [regNickname, setRegNickname] = useState('');
@@ -542,6 +555,15 @@ export default function App() {
           prev.map((u) => (u.email.toLowerCase() === ADMIN_EMAIL.toLowerCase() ? adminUser! : u))
         );
       }
+      if (rememberPassword) {
+        localStorage.setItem('ba_remember_password', 'true');
+        localStorage.setItem('ba_saved_email', email);
+        localStorage.setItem('ba_saved_password', password);
+      } else {
+        localStorage.removeItem('ba_remember_password');
+        localStorage.removeItem('ba_saved_email');
+        localStorage.removeItem('ba_saved_password');
+      }
       setCurrentUser(adminUser);
       setActiveTab('overview');
       showToast(`ยินดีต้อนรับ ${adminUser.name}`);
@@ -555,7 +577,7 @@ export default function App() {
     );
 
     if (!foundUser) {
-      setAuthErrorMessage('อีเมลหรือรหัสผ่านไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง หรือกดปุ่มเข้าสู่ระบบด่วน');
+      setAuthErrorMessage('อีเมลหรือรหัสผ่านไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง');
       showToast('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
       return;
     }
@@ -566,6 +588,15 @@ export default function App() {
       return;
     }
 
+    if (rememberPassword) {
+      localStorage.setItem('ba_remember_password', 'true');
+      localStorage.setItem('ba_saved_email', email);
+      localStorage.setItem('ba_saved_password', password);
+    } else {
+      localStorage.removeItem('ba_remember_password');
+      localStorage.removeItem('ba_saved_email');
+      localStorage.removeItem('ba_saved_password');
+    }
     setCurrentUser(foundUser);
     setActiveTab('overview');
     showToast(`ยินดีต้อนรับ ${foundUser.name}`);
@@ -615,6 +646,9 @@ export default function App() {
     setShowNewStudentForm(false);
     setAuthErrorMessage(null);
     setAuthMode('login');
+    if (!rememberPassword) {
+      setLoginPassword('');
+    }
     setCurrentUser(null);
     showToast('ออกจากระบบเรียบร้อย');
   };
@@ -1197,8 +1231,12 @@ export default function App() {
         <div className="bg-[#fdfbf7] rounded-3xl shadow-[0_4px_24px_rgba(40,30,20,0.06)] w-full max-w-md p-8 border border-[#e7e1d8] transition-all">
           {/* Logo */}
           <div className="text-center mb-6">
-            <div className="w-20 h-20 bg-[#c06a35] rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-md shadow-[#c06a35]/20 text-white font-extrabold text-3xl tracking-wider">
-              BA
+            <div className="w-24 h-24 mx-auto mb-3 flex items-center justify-center">
+              <img
+                src="/assets/aistudio/BA_LOGO_TEST_2027-02_c5c0a954.png"
+                alt="Born to be Art"
+                className="w-full h-full object-contain"
+              />
             </div>
             <h1 className="text-2xl font-bold text-[#2d2825]">Born to be Art</h1>
             <p className="text-[#7a7267] text-sm mt-1">ระบบจัดการและเช็คชื่อนักเรียน</p>
@@ -1274,22 +1312,32 @@ export default function App() {
                 </div>
               </div>
 
+              <div className="flex items-center justify-between pt-0.5">
+                <label className="flex items-center space-x-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={rememberPassword}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setRememberPassword(checked);
+                      if (!checked) {
+                        localStorage.removeItem('ba_remember_password');
+                        localStorage.removeItem('ba_saved_email');
+                        localStorage.removeItem('ba_saved_password');
+                      }
+                    }}
+                    className="w-4 h-4 rounded text-[#c06a35] focus:ring-[#c06a35] border-[#ded7cc] accent-[#c06a35] cursor-pointer"
+                  />
+                  <span className="text-xs text-[#5c554b] font-medium">บันทึกรหัสผ่าน</span>
+                </label>
+              </div>
+
               <button
                 type="submit"
                 className="w-full py-3 bg-[#282523] hover:bg-[#38332f] text-white font-medium rounded-xl text-sm shadow-sm transition duration-200 flex items-center justify-center space-x-2 cursor-pointer"
               >
                 <ShieldCheck className="w-4 h-4 text-[#e8c599]" />
                 <span>เข้าสู่ระบบ</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleQuickAdminLogin}
-                className="w-full py-2.5 bg-[#fbf4eb] hover:bg-[#f5e9d9] text-[#9a4f21] font-semibold rounded-xl text-xs border border-[#edd7c4] transition duration-200 flex items-center justify-center space-x-1.5 cursor-pointer shadow-xs"
-                title="เข้าสู่ระบบทันทีด้วยบัญชีผู้ดูแลระบบ"
-              >
-                <Zap className="w-3.5 h-3.5 text-[#c06a35]" />
-                <span>เข้าสู่ระบบด่วน (Admin p.roobchird@gmail.com)</span>
               </button>
 
               <div className="pt-4 border-t border-[#ede7dd] text-center">
@@ -1388,8 +1436,12 @@ export default function App() {
       {/* Mobile Topbar */}
       <div className="md:hidden bg-[#282523] text-[#f7f4ee] p-4 flex items-center justify-between border-b border-[#3b3530] shrink-0">
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-[#c06a35] rounded-lg flex items-center justify-center font-bold text-xs text-white">
-            BA
+          <div className="w-8 h-8 rounded-lg overflow-hidden bg-white p-0.5 flex items-center justify-center shrink-0">
+            <img
+              src="/assets/aistudio/BA_LOGO_TEST_2027-02_c5c0a954.png"
+              alt="Born to be Art"
+              className="w-full h-full object-contain"
+            />
           </div>
           <span className="font-bold text-sm tracking-wide">Born to be Art</span>
         </div>
@@ -1410,8 +1462,12 @@ export default function App() {
         {/* Logo Header */}
         <div className="p-5 border-b border-[#3b3530] flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-[#c06a35] rounded-xl flex items-center justify-center font-extrabold text-white text-lg shadow-md shadow-[#c06a35]/25">
-              BA
+            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center p-1 shadow-sm overflow-hidden shrink-0">
+              <img
+                src="/assets/aistudio/BA_LOGO_TEST_2027-02_c5c0a954.png"
+                alt="Born to be Art"
+                className="w-full h-full object-contain"
+              />
             </div>
             <div>
               <h2 className="font-bold text-[#f7f4ee] leading-tight">Born to be Art</h2>
