@@ -25,7 +25,12 @@ import {
   EyeOff,
   Zap,
 } from 'lucide-react';
-import { isSupabaseConfigured, fetchRemoteState, saveRemoteState } from './supabase';
+import {
+  isSupabaseConfigured,
+  fetchRemoteState,
+  saveRemoteState,
+  subscribeToRealtimeChanges,
+} from './supabase';
 import {
   ActiveTab,
   Classroom,
@@ -207,6 +212,8 @@ export default function App() {
 
   // References to prevent premature auto-saving before initial cloud fetch completes
   const isCloudLoadedRef = React.useRef(false);
+  // Reference to track whether an update originated remotely to prevent echo broadcast loop
+  const isRemoteUpdateRef = React.useRef(false);
 
   // Sync to localStorage as offline cache
   useEffect(() => {
@@ -309,36 +316,128 @@ export default function App() {
     };
   }, []);
 
-  // Debounced Auto-save rounds to Supabase when changed
+  // Realtime subscription across all connected devices (WebSockets & Postgres CDC)
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+
+    const unsubscribe = subscribeToRealtimeChanges((key, data) => {
+      if (!isCloudLoadedRef.current) return;
+
+      if (key === 'rounds' && Array.isArray(data)) {
+        const curStr = JSON.stringify(rounds);
+        const newStr = JSON.stringify(data);
+        if (curStr !== newStr) {
+          isRemoteUpdateRef.current = true;
+          setRounds(data as Round[]);
+          setCloudStatus('synced');
+          showToast('⚡ อัปเดตการเช็คชื่อแบบเรียลไทม์แล้ว');
+        }
+      } else if (key === 'students' && Array.isArray(data)) {
+        const curStr = JSON.stringify(databaseStudents);
+        const newStr = JSON.stringify(data);
+        if (curStr !== newStr) {
+          isRemoteUpdateRef.current = true;
+          setDatabaseStudents(data as DatabaseStudent[]);
+          setCloudStatus('synced');
+        }
+      } else if (key === 'users' && Array.isArray(data)) {
+        const curStr = JSON.stringify(users);
+        const newStr = JSON.stringify(data);
+        if (curStr !== newStr) {
+          isRemoteUpdateRef.current = true;
+          setUsers(data as User[]);
+          setCloudStatus('synced');
+        }
+      }
+    });
+
+    // Window focus / visibility listener: immediate catch-up when switching tabs or waking device
+    const handleFocusSync = async () => {
+      if (document.visibilityState === 'visible' && isCloudLoadedRef.current) {
+        try {
+          const freshRounds = await fetchRemoteState<Round[]>('rounds');
+          if (freshRounds && Array.isArray(freshRounds)) {
+            if (JSON.stringify(rounds) !== JSON.stringify(freshRounds)) {
+              isRemoteUpdateRef.current = true;
+              setRounds(freshRounds);
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
+    };
+
+    window.addEventListener('focus', handleFocusSync);
+    document.addEventListener('visibilitychange', handleFocusSync);
+
+    // Silent background fallback sync every 8 seconds to guarantee 100% data consistency
+    const backgroundInterval = setInterval(async () => {
+      if (isCloudLoadedRef.current && isSupabaseConfigured) {
+        try {
+          const freshRounds = await fetchRemoteState<Round[]>('rounds');
+          if (freshRounds && Array.isArray(freshRounds)) {
+            if (JSON.stringify(rounds) !== JSON.stringify(freshRounds)) {
+              isRemoteUpdateRef.current = true;
+              setRounds(freshRounds);
+            }
+          }
+        } catch {
+          // silent fallback
+        }
+      }
+    }, 8000);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener('focus', handleFocusSync);
+      document.removeEventListener('visibilitychange', handleFocusSync);
+      clearInterval(backgroundInterval);
+    };
+  }, [rounds, databaseStudents, users]);
+
+  // Debounced Auto-save rounds to Supabase when changed locally
   useEffect(() => {
     if (!isCloudLoadedRef.current || !isSupabaseConfigured) return;
+    if (isRemoteUpdateRef.current) {
+      isRemoteUpdateRef.current = false;
+      return;
+    }
     const timer = setTimeout(async () => {
       setCloudStatus('syncing');
       const ok = await saveRemoteState('rounds', rounds);
       setCloudStatus(ok ? 'synced' : 'error');
-    }, 800);
+    }, 350);
     return () => clearTimeout(timer);
   }, [rounds]);
 
-  // Debounced Auto-save students to Supabase when changed
+  // Debounced Auto-save students to Supabase when changed locally
   useEffect(() => {
     if (!isCloudLoadedRef.current || !isSupabaseConfigured) return;
+    if (isRemoteUpdateRef.current) {
+      isRemoteUpdateRef.current = false;
+      return;
+    }
     const timer = setTimeout(async () => {
       setCloudStatus('syncing');
       const ok = await saveRemoteState('students', databaseStudents);
       setCloudStatus(ok ? 'synced' : 'error');
-    }, 800);
+    }, 500);
     return () => clearTimeout(timer);
   }, [databaseStudents]);
 
-  // Debounced Auto-save users to Supabase when changed
+  // Debounced Auto-save users to Supabase when changed locally
   useEffect(() => {
     if (!isCloudLoadedRef.current || !isSupabaseConfigured) return;
+    if (isRemoteUpdateRef.current) {
+      isRemoteUpdateRef.current = false;
+      return;
+    }
     const timer = setTimeout(async () => {
       setCloudStatus('syncing');
       const ok = await saveRemoteState('users', users);
       setCloudStatus(ok ? 'synced' : 'error');
-    }, 800);
+    }, 500);
     return () => clearTimeout(timer);
   }, [users]);
 
@@ -1597,7 +1696,7 @@ export default function App() {
             />
             <span className="text-[11px]">
               {cloudStatus === 'synced'
-                ? 'ซิงค์คลาวด์แล้ว'
+                ? 'เรียลไทม์ (Live Sync)'
                 : cloudStatus === 'syncing'
                 ? 'กำลังซิงค์...'
                 : cloudStatus === 'error'
