@@ -8,24 +8,35 @@ export const isSupabaseConfigured = Boolean(
   !SUPABASE_URL.includes('your-supabase')
 );
 
-export const supabase: SupabaseClient | null = isSupabaseConfigured
-  ? createClient(SUPABASE_URL, SUPABASE_KEY, {
+export const supabase: SupabaseClient | null = (() => {
+  if (!isSupabaseConfigured) return null;
+  try {
+    return createClient(SUPABASE_URL, SUPABASE_KEY, {
       realtime: {
         params: {
           eventsPerSecond: 10,
         },
       },
-    })
-  : null;
-
-let sharedRealtimeChannel: RealtimeChannel | null = null;
-
-export function getRealtimeChannel(): RealtimeChannel | null {
-  if (!supabase) return null;
-  if (!sharedRealtimeChannel) {
-    sharedRealtimeChannel = supabase.channel('ba_classroom_live_sync');
+    });
+  } catch (err) {
+    console.warn('Failed to initialize Supabase client:', err);
+    return null;
   }
-  return sharedRealtimeChannel;
+})();
+
+let sharedBroadcastChannel: RealtimeChannel | null = null;
+
+function getBroadcastChannel(): RealtimeChannel | null {
+  if (!supabase) return null;
+  if (!sharedBroadcastChannel) {
+    try {
+      sharedBroadcastChannel = supabase.channel('ba_classroom_broadcast_channel');
+      sharedBroadcastChannel.subscribe();
+    } catch (err) {
+      console.warn('Failed to create broadcast channel:', err);
+    }
+  }
+  return sharedBroadcastChannel;
 }
 
 /**
@@ -34,7 +45,7 @@ export function getRealtimeChannel(): RealtimeChannel | null {
 export async function broadcastRemoteChange(key: string, data: unknown): Promise<void> {
   if (!supabase) return;
   try {
-    const channel = getRealtimeChannel();
+    const channel = getBroadcastChannel();
     if (channel) {
       await channel.send({
         type: 'broadcast',
@@ -109,30 +120,41 @@ export function subscribeToRealtimeChanges(
 ): () => void {
   if (!supabase) return () => {};
 
-  const channel = getRealtimeChannel();
-  if (!channel) return () => {};
+  try {
+    const channelName = `ba_sub_${Math.random().toString(36).slice(2, 9)}`;
+    const channel = supabase.channel(channelName);
 
-  channel
-    .on('broadcast', { event: 'state_changed' }, (payload) => {
-      if (payload.payload?.key) {
-        onRemoteChange(payload.payload.key, payload.payload.data);
-      }
-    })
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'app_state' },
-      (payload) => {
-        const record = (payload.new || {}) as { key?: string; data?: unknown };
-        if (record.key && record.data) {
-          onRemoteChange(record.key, record.data);
+    channel
+      .on('broadcast', { event: 'state_changed' }, (payload) => {
+        if (payload.payload?.key) {
+          onRemoteChange(payload.payload.key, payload.payload.data);
         }
-      }
-    )
-    .subscribe((status) => {
-      console.log('Realtime sync connection status:', status);
-    });
+      })
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'app_state' },
+        (payload) => {
+          const record = (payload.new || {}) as { key?: string; data?: unknown };
+          if (record.key && record.data) {
+            onRemoteChange(record.key, record.data);
+          }
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('Realtime sync connected successfully');
+        }
+      });
 
-  return () => {
-    // Keep channel alive for app lifetime
-  };
+    return () => {
+      try {
+        supabase?.removeChannel(channel);
+      } catch (e) {
+        console.warn('Error removing realtime channel:', e);
+      }
+    };
+  } catch (err) {
+    console.warn('Failed to subscribe to realtime changes:', err);
+    return () => {};
+  }
 }

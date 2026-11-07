@@ -117,13 +117,16 @@ export default function App() {
 
   // Current Auth State
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem('ba_current_user');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error(e);
+    try {
+      const saved = localStorage.getItem('ba_current_user');
+      if (saved && saved !== 'undefined' && saved !== 'null') {
+        const u = JSON.parse(saved);
+        if (u && typeof u === 'object' && typeof u.email === 'string' && typeof u.role === 'string') {
+          return u as User;
+        }
       }
+    } catch (e) {
+      console.error('Failed to parse cached user:', e);
     }
     return null;
   });
@@ -316,6 +319,13 @@ export default function App() {
     };
   }, []);
 
+  const roundsRef = React.useRef(rounds);
+  roundsRef.current = rounds;
+  const databaseStudentsRef = React.useRef(databaseStudents);
+  databaseStudentsRef.current = databaseStudents;
+  const usersRef = React.useRef(users);
+  usersRef.current = users;
+
   // Realtime subscription across all connected devices (WebSockets & Postgres CDC)
   useEffect(() => {
     if (!isSupabaseConfigured) return;
@@ -324,7 +334,7 @@ export default function App() {
       if (!isCloudLoadedRef.current) return;
 
       if (key === 'rounds' && Array.isArray(data)) {
-        const curStr = JSON.stringify(rounds);
+        const curStr = JSON.stringify(roundsRef.current);
         const newStr = JSON.stringify(data);
         if (curStr !== newStr) {
           isRemoteUpdateRef.current = true;
@@ -333,7 +343,7 @@ export default function App() {
           showToast('⚡ อัปเดตการเช็คชื่อแบบเรียลไทม์แล้ว');
         }
       } else if (key === 'students' && Array.isArray(data)) {
-        const curStr = JSON.stringify(databaseStudents);
+        const curStr = JSON.stringify(databaseStudentsRef.current);
         const newStr = JSON.stringify(data);
         if (curStr !== newStr) {
           isRemoteUpdateRef.current = true;
@@ -341,7 +351,7 @@ export default function App() {
           setCloudStatus('synced');
         }
       } else if (key === 'users' && Array.isArray(data)) {
-        const curStr = JSON.stringify(users);
+        const curStr = JSON.stringify(usersRef.current);
         const newStr = JSON.stringify(data);
         if (curStr !== newStr) {
           isRemoteUpdateRef.current = true;
@@ -357,7 +367,7 @@ export default function App() {
         try {
           const freshRounds = await fetchRemoteState<Round[]>('rounds');
           if (freshRounds && Array.isArray(freshRounds)) {
-            if (JSON.stringify(rounds) !== JSON.stringify(freshRounds)) {
+            if (JSON.stringify(roundsRef.current) !== JSON.stringify(freshRounds)) {
               isRemoteUpdateRef.current = true;
               setRounds(freshRounds);
             }
@@ -377,7 +387,7 @@ export default function App() {
         try {
           const freshRounds = await fetchRemoteState<Round[]>('rounds');
           if (freshRounds && Array.isArray(freshRounds)) {
-            if (JSON.stringify(rounds) !== JSON.stringify(freshRounds)) {
+            if (JSON.stringify(roundsRef.current) !== JSON.stringify(freshRounds)) {
               isRemoteUpdateRef.current = true;
               setRounds(freshRounds);
             }
@@ -394,7 +404,7 @@ export default function App() {
       document.removeEventListener('visibilitychange', handleFocusSync);
       clearInterval(backgroundInterval);
     };
-  }, [rounds, databaseStudents, users]);
+  }, []);
 
   // Debounced Auto-save rounds to Supabase when changed locally
   useEffect(() => {
@@ -618,16 +628,21 @@ export default function App() {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setAuthErrorMessage(null);
-    const email = loginEmail.trim().toLowerCase();
-    const password = loginPassword.trim();
+    const email = loginEmail.replace(/\s+/g, '').toLowerCase();
+    const password = loginPassword.replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
 
     if (!email || !password) {
       setAuthErrorMessage('กรุณากรอกอีเมลและรหัสผ่าน');
       return;
     }
 
-    // Check if logging in as predefined admin (รองรับทั้ง p.roobchird@gmail.com และ p.roobchird)
-    const isAdminEmail = email === ADMIN_EMAIL.toLowerCase() || email === 'p.roobchird';
+    // Check if logging in as predefined admin (รองรับ p.roobchird@gmail.com, proobchird@gmail.com, p.roobchird, proobchird, admin)
+    const isAdminEmail =
+      email === ADMIN_EMAIL.toLowerCase() ||
+      email === 'proobchird@gmail.com' ||
+      email === 'p.roobchird' ||
+      email === 'proobchird' ||
+      email === 'admin';
     const isMatchingAdminPass =
       password === ADMIN_PASSWORD || password.toLowerCase() === ADMIN_PASSWORD.toLowerCase();
 
@@ -656,8 +671,8 @@ export default function App() {
       }
       if (rememberPassword) {
         localStorage.setItem('ba_remember_password', 'true');
-        localStorage.setItem('ba_saved_email', email);
-        localStorage.setItem('ba_saved_password', password);
+        localStorage.setItem('ba_saved_email', ADMIN_EMAIL);
+        localStorage.setItem('ba_saved_password', ADMIN_PASSWORD);
       } else {
         localStorage.removeItem('ba_remember_password');
         localStorage.removeItem('ba_saved_email');
@@ -671,12 +686,15 @@ export default function App() {
 
     const foundUser = users.find(
       (u) =>
-        (u.email.toLowerCase() === email || u.email.toLowerCase().split('@')[0] === email) &&
+        (u.email.toLowerCase().replace(/\s+/g, '') === email ||
+          u.email.toLowerCase().split('@')[0].replace(/\s+/g, '') === email) &&
         (u.password === password || u.password?.toLowerCase() === password.toLowerCase())
     );
 
     if (!foundUser) {
-      setAuthErrorMessage('อีเมลหรือรหัสผ่านไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง');
+      setAuthErrorMessage(
+        'อีเมลหรือรหัสผ่านไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง (หากเป็น Admin ใช้อีเมล p.roobchird@gmail.com รหัสผ่าน 21052528mM)'
+      );
       showToast('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
       return;
     }
@@ -1335,6 +1353,12 @@ export default function App() {
                 src="/assets/aistudio/BA_LOGO_TEST_2027-02_c5c0a954.png"
                 alt="Born to be Art"
                 className="w-full h-full object-contain"
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  if (!target.src.endsWith('/logo.png')) {
+                    target.src = '/logo.png';
+                  }
+                }}
               />
             </div>
             <h1 className="text-2xl font-bold text-[#2d2825]">Born to be Art</h1>
@@ -1540,6 +1564,12 @@ export default function App() {
               src="/assets/aistudio/BA_LOGO_TEST_2027-02_c5c0a954.png"
               alt="Born to be Art"
               className="w-full h-full object-contain"
+              onError={(e) => {
+                const target = e.currentTarget;
+                if (!target.src.endsWith('/logo.png')) {
+                  target.src = '/logo.png';
+                }
+              }}
             />
           </div>
           <span className="font-bold text-sm tracking-wide">Born to be Art</span>
@@ -1566,6 +1596,12 @@ export default function App() {
                 src="/assets/aistudio/BA_LOGO_TEST_2027-02_c5c0a954.png"
                 alt="Born to be Art"
                 className="w-full h-full object-contain"
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  if (!target.src.endsWith('/logo.png')) {
+                    target.src = '/logo.png';
+                  }
+                }}
               />
             </div>
             <div>
@@ -1584,13 +1620,13 @@ export default function App() {
         {/* User Info Card */}
         <div className="px-4 py-3 mx-3 my-3 bg-[#332f2b] rounded-xl flex items-center justify-between border border-[#443f3a]">
           <div className="overflow-hidden">
-            <p className="text-sm font-semibold text-[#f7f4ee] truncate">{currentUser.name}</p>
+            <p className="text-sm font-semibold text-[#f7f4ee] truncate">{currentUser?.name || 'ผู้ดูแลระบบ'}</p>
             <div className="flex items-center space-x-1.5 mt-0.5">
               <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-[#c06a35] text-white uppercase">
-                {currentUser.role.toUpperCase()}
+                {currentUser?.role?.toUpperCase?.() || 'ADMIN'}
               </span>
               <span className="text-[11px] text-[#a89f92] truncate max-w-[100px]">
-                {currentUser.email}
+                {currentUser?.email || ''}
               </span>
             </div>
           </div>
