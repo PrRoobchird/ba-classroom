@@ -516,7 +516,7 @@ export default function App() {
           status = 'ต่อคอร์ส';
         }
         const lastRoom = String(
-          item['กลุ่มหลักสูตร'] || item['lastRoom'] || item['ห้องเรียนล่าสุด'] || ''
+          item['กลุ่มหลักสูตร'] || item['หลักสูตร'] || item['course'] || item['lastRoom'] || item['ห้องเรียนล่าสุด'] || ''
         ).trim();
 
         if (!code && !nickname) return null;
@@ -531,7 +531,7 @@ export default function App() {
       .filter((s): s is DatabaseStudent => s !== null);
   };
 
-  // Google Sheet Data Loader with optional user toast
+  // Google Sheet Data Loader with Smart Merge (preserves Web App modifications)
   const loadDataFromGas = async (silent = true) => {
     if (!GAS_URL) return;
     setIsGasSyncing(true);
@@ -544,11 +544,25 @@ export default function App() {
 
       const parsedStudents = parseGoogleSheetStudents(result);
       if (parsedStudents.length > 0) {
-        setDatabaseStudents(parsedStudents);
-        // Persist to Supabase Cloud so all devices receive the updated roster
-        if (isSupabaseConfigured) {
-          saveRemoteState('students', parsedStudents);
-        }
+        setDatabaseStudents((prev) => {
+          const merged = parsedStudents.map((sheetStudent) => {
+            const existing = prev.find(
+              (p) => p.code.toLowerCase().trim() === sheetStudent.code.toLowerCase().trim()
+            );
+            // รักษาการแก้ไขสถานะใน Web App ไม่ให้ Google Sheet ค่าเก่ามาเขียนทับ
+            return {
+              ...sheetStudent,
+              status: existing ? existing.status : sheetStudent.status,
+              lastRoom: sheetStudent.lastRoom || existing?.lastRoom,
+            };
+          });
+
+          if (isSupabaseConfigured) {
+            saveRemoteState('students', merged);
+          }
+          return merged;
+        });
+
         if (!silent) {
           showToast(`ซิงค์ข้อมูลนักเรียน ${parsedStudents.length} คน จาก Google Sheet สำเร็จ`);
         }
@@ -562,6 +576,30 @@ export default function App() {
       }
     } finally {
       setIsGasSyncing(false);
+    }
+  };
+
+  // ส่งข้อมูลอัปเดตสถานะหรือหลักสูตรกลับไปยัง Google Sheet ผ่าน Google Apps Script
+  const syncStudentToGas = async (
+    code: string,
+    updates: { status?: string; course?: string }
+  ) => {
+    if (!GAS_URL) return;
+    try {
+      await fetch(GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'updateStudent',
+          code,
+          status: updates.status,
+          course: updates.course,
+          lastRoom: updates.course,
+        }),
+        mode: 'no-cors',
+      });
+    } catch (e) {
+      console.warn('Sync to Google Sheet note:', e);
     }
   };
 
@@ -1015,10 +1053,12 @@ export default function App() {
         )
       );
       showToast(`อัปเดตสถานะของ ${studentName} เป็น ${newStatus}`);
+      syncStudentToGas(studentCode, { status: newStatus });
     }
   };
 
   const updateStudentCourse = (roomId: string, studentIdx: number, courseVal: string) => {
+    let studentCode = '';
     setRounds((prev) =>
       prev.map((round) => {
         if (round.id !== activeAttendanceRoundId) return round;
@@ -1027,6 +1067,7 @@ export default function App() {
           classrooms: round.classrooms.map((room) => {
             if (room.id !== roomId) return room;
             const updatedStudents = [...room.students];
+            studentCode = updatedStudents[studentIdx]?.code || '';
             updatedStudents[studentIdx] = {
               ...updatedStudents[studentIdx],
               course: courseVal,
@@ -1036,6 +1077,10 @@ export default function App() {
         };
       })
     );
+
+    if (studentCode && courseVal && courseVal !== 'custom') {
+      syncStudentToGas(studentCode, { course: courseVal });
+    }
   };
 
   const moveStudentInRoom = (roomId: string, index: number, direction: number) => {
@@ -1553,6 +1598,62 @@ export default function App() {
     (c) => c.id === activeAttendanceRoomId
   );
   const canEditAttendance = currentUser ? (currentUser.role === 'Admin' || currentUser.role === 'Staff') : false;
+
+  // คำนวณหลักสูตรในรอบเรียนล่าสุด โดยอิงจากวันที่ ณ ปัจจุบัน
+  const getLatestCourseForStudent = (studentCode: string, fallback?: string): string => {
+    if (!studentCode) return fallback || '-';
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    interface Match {
+      course: string;
+      latestDate: string;
+      isPastOrToday: boolean;
+      roundIndex: number;
+    }
+
+    const matches: Match[] = [];
+
+    rounds.forEach((round, rIdx) => {
+      round.classrooms.forEach((classroom) => {
+        const found = classroom.students.find(
+          (s) => s.code.toLowerCase().trim() === studentCode.toLowerCase().trim()
+        );
+        if (found && found.course && found.course !== 'custom') {
+          const validDates = classroom.dates.filter(Boolean).sort();
+          const latestDate = validDates.length > 0 ? validDates[validDates.length - 1] : '';
+          const isPastOrToday = Boolean(latestDate && latestDate <= todayStr);
+          matches.push({
+            course: found.course,
+            latestDate,
+            isPastOrToday,
+            roundIndex: rIdx,
+          });
+        }
+      });
+    });
+
+    if (matches.length === 0) {
+      return fallback || '-';
+    }
+
+    matches.sort((a, b) => {
+      // 1. ให้ความสำคัญกับรอบที่วันที่ <= ปัจจุบันก่อน
+      if (a.isPastOrToday && !b.isPastOrToday) return -1;
+      if (!a.isPastOrToday && b.isPastOrToday) return 1;
+
+      // 2. ถ้าทั้งคู่ <= ปัจจุบัน หรือทั้งคู่อยู่ในอนาคต ให้เลือกรอบที่มีวันที่ล่าสุด (มากไปน้อย)
+      if (a.latestDate && b.latestDate) {
+        return b.latestDate.localeCompare(a.latestDate);
+      }
+      if (a.latestDate && !b.latestDate) return -1;
+      if (!a.latestDate && b.latestDate) return 1;
+
+      // 3. หากไม่มีวันที่ระบุ ให้เลือกรอบแรกที่พบ (รอบดัชนีน้อย = รอบที่สร้างล่าสุด)
+      return a.roundIndex - b.roundIndex;
+    });
+
+    return matches[0].course || fallback || '-';
+  };
 
   return (
     <div className="w-full h-screen flex flex-col md:flex-row overflow-hidden bg-[#f7f4ee] font-sans text-[#2d2825]">
@@ -2476,7 +2577,7 @@ export default function App() {
                       <th className="px-4 py-3">ชื่อเล่น</th>
                       <th className="px-4 py-3">รุ่นปีการศึกษา</th>
                       <th className="px-4 py-3">สถานะ (อัปเดตล่าสุด)</th>
-                      <th className="px-4 py-3">ห้องล่าสุด</th>
+                      <th className="px-4 py-3">หลักสูตรล่าสุด</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#ede7dd]">
@@ -2509,8 +2610,8 @@ export default function App() {
                                 {st.status}
                               </span>
                             </td>
-                            <td className="px-4 py-3 text-xs text-[#7a7267]">
-                              {st.lastRoom || '-'}
+                            <td className="px-4 py-3 text-xs font-medium text-[#2d2825]">
+                              {getLatestCourseForStudent(st.code, st.lastRoom)}
                             </td>
                           </tr>
                         );
@@ -2967,7 +3068,7 @@ export default function App() {
                                 {st.status}
                               </span>
                               <span className="text-[#7a7267]">
-                                ห้องล่าสุด: {st.lastRoom || '-'}
+                                หลักสูตรล่าสุด: {getLatestCourseForStudent(st.code, st.lastRoom)}
                               </span>
                             </div>
                           </div>
