@@ -7,11 +7,11 @@ export const SUPABASE_KEY = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as st
 export const GAS_URL = (import.meta.env.VITE_GAS_URL as string) || 'https://script.google.com/macros/s/AKfycbxG0CApkmtC_4f4a90PinAlXC-OIAIEymJLt1jaBmEY5EGE9Rr_9siDfoETCwX8v_WQ/exec';
 
 export const STUDENT_STATUSES: Record<StudentStatus, { bg: string; text: string }> = {
-  'ต่อคอร์ส': { bg: 'bg-[#4a7a58]', text: 'text-white' },
-  'นักเรียนใหม่': { bg: 'bg-[#4c7285]', text: 'text-white' },
-  'กลับมาเรียน': { bg: 'bg-[#c6893b]', text: 'text-white' },
-  'เลิกเรียน': { bg: 'bg-[#b2534e]', text: 'text-white' },
-  'พักคอร์ส': { bg: 'bg-[#ba6a38]', text: 'text-white' },
+  'ต่อคอร์ส': { bg: 'bg-[#437a54]', text: 'text-white' },    // เขียว
+  'นักเรียนใหม่': { bg: 'bg-[#cf9328]', text: 'text-white' }, // เหลือง
+  'กลับมาเรียน': { bg: 'bg-[#366794]', text: 'text-white' }, // น้ำเงิน
+  'เลิกเรียน': { bg: 'bg-[#b84a44]', text: 'text-white' },   // แดง
+  'พักคอร์ส': { bg: 'bg-[#7c7771]', text: 'text-white' },    // เทา
 };
 
 export const ATTENDANCE_STATUSES: Record<string, { bg: string; text: string }> = {

@@ -2141,6 +2141,8 @@ export default function App() {
                             {activeAttendanceRoom.students.map((student, stIdx) => {
                               const isArchRoom = activeAttendanceRoom.name.includes('สถาปัตย์');
                               const courseOptions = isArchRoom ? ARCH_COURSES : INT_COURSES;
+                              const isNoAttendance =
+                                student.status === 'เลิกเรียน' || student.status === 'พักคอร์ส';
                               const statusBadge =
                                 STUDENT_STATUSES[student.status] || {
                                   bg: 'bg-[#ded7cc]',
@@ -2148,7 +2150,10 @@ export default function App() {
                                 };
 
                               return (
-                                <tr key={`${student.code}-${stIdx}`}>
+                                <tr
+                                  key={`${student.code}-${stIdx}`}
+                                  className={isNoAttendance ? 'bg-[#faf8f4]/60' : ''}
+                                >
                                   {/* Student info cell */}
                                   <td className="p-2 align-top">
                                     <div className="flex items-center space-x-2">
@@ -2301,6 +2306,15 @@ export default function App() {
 
                                   {/* Attendance columns (AM / PM) */}
                                   {activeAttendanceRoom.dates.map((dateStr) => {
+                                    if (isNoAttendance) {
+                                      return (
+                                        <React.Fragment key={dateStr}>
+                                          <td className="p-1 border-l border-[#ede7dd] bg-[#faf8f4]/60" />
+                                          <td className="p-1 border-r border-[#ede7dd] bg-[#faf8f4]/60" />
+                                        </React.Fragment>
+                                      );
+                                    }
+
                                     const amKey = `${dateStr}_am`;
                                     const pmKey = `${dateStr}_pm`;
                                     const amVal = student.attendance[amKey] || '-';
